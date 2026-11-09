@@ -32,6 +32,7 @@ a.btn.primary { color: var(--accent-ink); }
    is one entrance sequence and the live clock. Radii are tiered: hero 22, cards 14, controls 10, pills full. */
 :root {
   --bg: #f1f4f8;
+  --pers: #c2410c; --pers-ink: #ffffff;
   --surface: #ffffff;
   --ink: #131f2b;
   --muted: #56677a;
@@ -51,7 +52,7 @@ a.btn.primary { color: var(--accent-ink); }
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0d1318; --surface: #162029; --ink: #e8eef3; --muted: #94a4b2; --line: #263340;
+    --bg: #0d1318; --surface: #162029; --ink: #e8eef3; --muted: #94a4b2; --line: #263340; --pers: #fdba74; --pers-ink: #2a1200;
     --accent: #90a3ff; --accent-ink: #0d1318; --accent-soft: #212d54; --ok: #5fd08c;
     --ang-bg: #14352f; --ang-fg: #72d9be; --ang-x: #3cc9a6; --ang-xt: #052a21;
     --sta-bg: #3a2a0d; --sta-fg: #f2b65c; --sta-x: #f0b252; --sta-xt: #2e1d00;
@@ -62,7 +63,7 @@ a.btn.primary { color: var(--accent-ink); }
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0d1318; --surface: #162029; --ink: #e8eef3; --muted: #94a4b2; --line: #263340;
+  --bg: #0d1318; --surface: #162029; --ink: #e8eef3; --muted: #94a4b2; --line: #263340; --pers: #fdba74; --pers-ink: #2a1200;
   --accent: #90a3ff; --accent-ink: #0d1318; --accent-soft: #212d54; --ok: #5fd08c;
   --ang-bg: #14352f; --ang-fg: #72d9be; --ang-x: #3cc9a6; --ang-xt: #052a21;
   --sta-bg: #3a2a0d; --sta-fg: #f2b65c; --sta-x: #f0b252; --sta-xt: #2e1d00;
@@ -405,7 +406,9 @@ td .c.off { opacity: .4; text-decoration: line-through; }
 
 .planbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .planbar .hint { flex-basis: 100%; margin: 0; }
-.tag-c { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--ink); font-size: 12px; }
+.tag-c { display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 99px; background: var(--pers); color: var(--pers-ink); font-size: 12px; font-weight: 700; }
+.dc.custom { box-shadow: inset 5px 0 0 var(--pers); }
+.dc-title .tag-c { margin-left: 8px; }
 .pe { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
 .pe-t { grid-column: 1; display: flex; align-items: center; gap: 6px; }
 .pe-x { grid-column: 1; }
@@ -492,6 +495,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
         <div class="actions">
           <button class="btn primary" id="gostudy" type="button"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Étude de ce jour</button>
           <button class="btn" id="copy" type="button"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>Copier pour WhatsApp</button>
+          <button class="btn" id="roombtn" type="button" hidden><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>Mes salles</button>
           <button class="btn" id="impbtn" type="button"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.4l1.3-2h5.6l1.3 2h1.4A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.2"/></svg>Importer mon horaire (photo)</button>
           <button type="button" class="btn" id="ics"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>Ajouter à l'agenda</button><label class="btn icssel" for="icsrem">Rappel avant chaque cours <select id="icsrem"><option value="10">10 min</option><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">1 heure</option></select></label><button class="btn" id="dayoff" type="button" aria-pressed="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg><span id="dayofftx">Jour sans cours</span></button>
         </div>
@@ -568,14 +572,23 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       <p class="imp-p imp-warn">Fonctionne pour les matières Anglais, Statistique, Logique et E.O.E (L1 LMD). La lecture demande Internet la première fois.</p>
       <label class="btn primary imp-file"><input type="file" id="imp-file" accept="image/*"><span>Prendre une photo ou choisir une image</span></label>
       <button type="button" class="btn" id="imp-manual">Saisir à la main</button>
+      <p class="imp-p imp-warn">Tu as le même horaire qu'une de ces classes, mais pas les mêmes salles ?</p>
+      <div class="imp-btns"><button type="button" class="btn" id="imp-fromA">Partir de la classe A</button><button type="button" class="btn" id="imp-fromB">Partir de la classe B</button></div>
       <p class="imp-status" id="imp-status" role="status" aria-live="polite"></p>
       <button type="button" class="btn imp-x" id="imp-cancel1">Fermer</button>
+    </div>
+    <div id="imp-s3" hidden>
+      <p class="imp-p">Indique les salles de ton horaire. Elles s'affichent selon la date : un nom pour les jours pairs, un autre pour les jours impairs. Laisse vide pour ne rien afficher.</p>
+      <div class="imp-row"><label for="rm-r0">Salle jours pairs</label><input type="text" id="rm-r0" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
+      <div class="imp-row"><label for="rm-r1">Salle jours impairs</label><input type="text" id="rm-r1" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
+      <p class="imp-err" id="rm-err" role="alert"></p>
+      <div class="imp-btns"><button type="button" class="btn primary" id="rm-save">Enregistrer les salles</button><button type="button" class="btn" id="rm-cancel">Fermer</button></div>
     </div>
     <div id="imp-s2" hidden>
       <p class="imp-p" id="imp-note"></p>
       <div class="imp-row"><label for="imp-date">Début des cours</label><input type="date" id="imp-date"></div>
-      <div class="imp-row"><label for="imp-r0">Salle jours pairs</label><input type="text" id="imp-r0" placeholder="facultatif" autocomplete="off"></div>
-      <div class="imp-row"><label for="imp-r1">Salle jours impairs</label><input type="text" id="imp-r1" placeholder="facultatif" autocomplete="off"></div>
+      <div class="imp-row"><label for="imp-r0">Salle jours pairs</label><input type="text" id="imp-r0" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
+      <div class="imp-row"><label for="imp-r1">Salle jours impairs</label><input type="text" id="imp-r1" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
       <div class="imp-scroll"><table class="imp-grid" id="imp-grid"></table></div>
       <p class="imp-err" id="imp-err" role="alert"></p>
       <div class="imp-btns"><button type="button" class="btn primary" id="imp-save">Enregistrer mon horaire</button><button type="button" class="btn" id="imp-back">Retour</button></div>
@@ -739,7 +752,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   function fmtLong(d) { return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); }
   function fmtShort(d) { return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }); }
   function roomFor(d) { return d.getDate() % 2 === 0 ? ROOMS[0] : ROOMS[1]; }
-  function roomTxt(d) { var r = roomFor(d); return r ? "Salle " + r : ""; }
+  function roomTxt(d) { var r = roomFor(d); return r ? (/^salle\b/i.test(r) ? r : "Salle " + r) : ""; }
   function pm(s) { var p = s.split("h"); return +p[0] * 60 + +p[1]; }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function hrs(min) { var h = min / 60; return (Math.round(h * 10) / 10).toString().replace(".", ",") + " h"; }
@@ -762,7 +775,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   function isOff(dk, a) { return !!(store.offDay[dk] || store.off[dk + "|" + a]); }
   function hasRem(d) { return (store.rem[dkey(d)] || []).some(function (r) { return !r.done; }); }
   (function initClass() {
-    $("#eyebrow").textContent = (IS_C ? "Mon horaire" : "L1 LMD " + CLS) + ", Math, Stat et Info";
+    $("#eyebrow").textContent = "L1 LMD " + CLS + ", Math, Stat et Info"; $("#eyebrow").hidden = IS_C;
     var rt = ROOMS[0] || ROOMS[1] ? " Salle " + ROOMS[0] + " les jours pairs, " + ROOMS[1] + " les jours impairs, selon la date." : "";
     $("#weekhint").textContent = "Faites glisser le tableau pour voir toute la semaine. Touchez une matière pour la mettre en évidence, touchez un cours pour ouvrir sa journée." + rt + (IS_A ? " L'horaire de la classe A ne mentionne pas de date de début : le 9 novembre est supposé, comme pour la classe B." : "");
     $$("#clsctl button").forEach(function (b) {
@@ -1069,9 +1082,9 @@ function parseGrid(words, imgW) {
   /* ---------- importer l'horaire (photo) ---------- */
   var impFrom = null;
   var SLOT_LBL = SLOTS.map(function (x) { return x[0] + "-" + x[1]; });
-  function impOpen() { impFrom = document.activeElement; $("#imp").hidden = false; $("#imp-s1").hidden = false; $("#imp-s2").hidden = true; $("#imp-status").textContent = ""; document.body.style.overflow = "hidden"; $("#imp-manual").focus(); }
+  function impOpen() { $("#imp-title").textContent = "Importer mon horaire"; impFrom = document.activeElement; $("#imp").hidden = false; $("#imp-s1").hidden = false; $("#imp-s2").hidden = true; $("#imp-s3").hidden = true; $("#imp-status").textContent = ""; document.body.style.overflow = "hidden"; $("#imp-manual").focus(); }
   function impClose() { $("#imp").hidden = true; document.body.style.overflow = ""; if (impFrom && impFrom.focus) impFrom.focus(); }
-  function impEditor(grid, date, note) {
+  function impEditor(grid, date, note, blankRooms) {
     var cur = CUSTOM && CUSTOM.g ? CUSTOM : null;
     var h = '<tr><th class="d"></th>' + SLOT_LBL.map(function (l) { return "<th>" + l.replace("-", "<br>") + "</th>"; }).join("") + "</tr>";
     DAYNAMES.forEach(function (d, di) {
@@ -1085,7 +1098,8 @@ function parseGrid(words, imgW) {
     });
     $("#imp-grid").innerHTML = h;
     $("#imp-date").value = date || (cur && cur.start) || "2026-11-09";
-    $("#imp-r0").value = cur ? cur.r0 || "" : ""; $("#imp-r1").value = cur ? cur.r1 || "" : "";
+    $("#imp-r0").value = cur && !blankRooms ? cur.r0 || "" : ""; $("#imp-r1").value = cur && !blankRooms ? cur.r1 || "" : "";
+    $("#imp-s3").hidden = true;
     $("#imp-note").textContent = note; $("#imp-err").textContent = "";
     $("#imp-s1").hidden = true; $("#imp-s2").hidden = false; $("#imp-date").focus();
   }
@@ -1122,7 +1136,23 @@ function parseGrid(words, imgW) {
       })
       .catch(function (e) { st.textContent = e && e.message === "net" ? "Lecteur indisponible (pas d'Internet ?). Tu peux saisir ton horaire à la main." : "La lecture a échoué. Tu peux saisir ton horaire à la main."; });
   }
-  $("#impbtn").addEventListener("click", impOpen);
+  function copyGrid(src) { return DAYNAMES.map(function (d) { var f = src.filter(function (x) { return x.k === d[0]; })[0]; return f ? f.g.slice() : [null, null, null, null]; }); }
+  $("#imp-fromA").addEventListener("click", function () { impEditor(copyGrid(DAYS_A), "2026-11-09", "Horaire de la classe A copié. Change ce qui est différent et indique tes salles.", true); });
+  $("#imp-fromB").addEventListener("click", function () { impEditor(copyGrid(DAYS_B), "2026-11-09", "Horaire de la classe B copié. Change ce qui est différent et indique tes salles.", true); });
+  function roomsOpen() {
+    impFrom = document.activeElement; $("#imp").hidden = false; $("#imp-title").textContent = "Mes salles";
+    $("#imp-s1").hidden = true; $("#imp-s2").hidden = true; $("#imp-s3").hidden = false; document.body.style.overflow = "hidden";
+    $("#rm-r0").value = CUSTOM && CUSTOM.r0 || ""; $("#rm-r1").value = CUSTOM && CUSTOM.r1 || ""; $("#rm-err").textContent = ""; $("#rm-r0").focus();
+  }
+  $("#roombtn").hidden = !IS_C;
+  $("#roombtn").addEventListener("click", roomsOpen);
+  $("#rm-cancel").addEventListener("click", impClose);
+  $("#rm-save").addEventListener("click", function () {
+    try { var c = JSON.parse(localStorage.getItem("ma-semaine-custom")); c.r0 = $("#rm-r0").value.trim(); c.r1 = $("#rm-r1").value.trim(); localStorage.setItem("ma-semaine-custom", JSON.stringify(c)); }
+    catch (e) { $("#rm-err").textContent = "Impossible d'enregistrer sur cet appareil."; return; }
+    location.reload();
+  });
+  $("#impbtn").addEventListener("click", function () { $("#imp-title").textContent = "Importer mon horaire"; impOpen(); });
   $("#imp-cancel1").addEventListener("click", impClose);
   $("#imp-manual").addEventListener("click", function () { impEditor(null, null, "Choisis la matière de chaque créneau. Laisse « — » quand il n'y a pas de cours."); });
   $("#imp-back").addEventListener("click", function () { $("#imp-s2").hidden = true; $("#imp-s1").hidden = false; $("#imp-manual").focus(); });
@@ -1161,7 +1191,7 @@ function parseGrid(words, imgW) {
         L.push("BEGIN:VEVENT", "UID:l1" + CLS.toLowerCase() + "-" + date.getFullYear() + pad(date.getMonth() + 1) + pad(date.getDate()) + "-" + b.a + "@ma-semaine", "DTSTAMP:" + z,
           "DTSTART;TZID=Africa/Kinshasa:" + icsStamp(date, b.a), "DTEND;TZID=Africa/Kinshasa:" + icsStamp(date, b.e),
           "SUMMARY:" + icsEsc(sj.n + (room ? " (salle " + room + ")" : "")));
-        if (room) L.push("LOCATION:" + icsEsc("Salle " + room));
+        if (room) L.push("LOCATION:" + icsEsc(roomTxt(date)));
         L.push("DESCRIPTION:" + icsEsc(sj.n + (sj.t ? "\nEnseignant : " + sj.t : "") + (room ? "\nSalle " + room : "")), "CATEGORIES:" + icsEsc(sj.n), "TRANSP:OPAQUE",
           "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(sj.n + " dans " + lab), "TRIGGER:-PT" + rem + "M", "END:VALARM", "END:VEVENT");
       });
@@ -1216,6 +1246,7 @@ function parseGrid(words, imgW) {
   function renderDay(dir, still) {
     var d = DAYS[selIdx()], dt = dateOf(d.dow);
     $("#dayname").textContent = cap(fmtLong(dt));
+    $("#date").textContent = cap(fmtLong(dt));
     $("#room").textContent = roomTxt(dt); $("#room").hidden = !roomTxt(dt);
     $("#prev").disabled = selIdx() === 0 && wk === 0;
     $("#next").disabled = selIdx() === DAYS.length - 1 && wk === WEEKS - 1;
@@ -1379,9 +1410,9 @@ function parseGrid(words, imgW) {
       });
       if (editing) items += '<div class="pe-acts"><button type="button" class="mini pe-add">Ajouter une séance</button>' + (d.custom ? '<button type="button" class="mini pe-reset">Rétablir la suggestion</button>' : "") + "</div>";
       else if (!d.items.length) items += '<p class="note">Aucune séance ce jour. Utilise « Personnaliser mon planning » pour en ajouter.</p>';
-      h += '<article class="dc' + (open ? " open" : "") + (isT ? " today" : "") + (full ? " complete" : "") + '" id="d-' + d.k + '" data-k="' + d.k + '">' +
-        '<button type="button" class="dc-head" aria-expanded="' + open + '" aria-controls="b-' + d.k + '"><span class="dc-title">' + d.n + '<span class="dd">' + sdl(d) + "</span>" + (isT ? '<span class="tag-today">aujourd\'hui</span>' : "") + '</span><span class="dc-meta"><span class="dc-count">' + c + "/" + d.items.length + '</span><span class="dc-mini"><i style="width:' + (d.items.length ? c / d.items.length * 100 : 0) + '%"></i></span><span class="dc-check" aria-hidden="true">' + CHECK + "</span>" + CHEV + "</span></button>" +
-        '<div class="dc-body" id="b-' + d.k + '"><div class="dc-inner"><p class="note">' + d.note + (d.custom ? '<span class="tag-c">personnalisé</span>' : "") + "</p>" + items + "</div></div></article>";
+      h += '<article class="dc' + (d.custom ? " custom" : "") + (open ? " open" : "") + (isT ? " today" : "") + (full ? " complete" : "") + '" id="d-' + d.k + '" data-k="' + d.k + '">' +
+        '<button type="button" class="dc-head" aria-expanded="' + open + '" aria-controls="b-' + d.k + '"><span class="dc-title">' + d.n + '<span class="dd">' + sdl(d) + "</span>" + (isT ? '<span class="tag-today">aujourd\'hui</span>' : "") + (d.custom ? '<span class="tag-c">personnalisé</span>' : "") + '</span><span class="dc-meta"><span class="dc-count">' + c + "/" + d.items.length + '</span><span class="dc-mini"><i style="width:' + (d.items.length ? c / d.items.length * 100 : 0) + '%"></i></span><span class="dc-check" aria-hidden="true">' + CHECK + "</span>" + CHEV + "</span></button>" +
+        '<div class="dc-body" id="b-' + d.k + '"><div class="dc-inner"><p class="note">' + d.note + "</p>" + items + "</div></div></article>";
     });
     $("#study").innerHTML = h;
     updateProgress(false);
