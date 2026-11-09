@@ -1,6 +1,6 @@
 /* Mode hors connexion : les fichiers de l'application sont gardés sur le téléphone.
    Pour publier une nouvelle version, changez le numéro ci-dessous. */
-var CACHE = "ma-semaine-v2";
+var CACHE = "ma-semaine-v3";
 var CORE = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png",
             "icon-maskable-512.png", "apple-touch-icon.png", "Cours-L1-LMD-B.ics", "Cours-L1-LMD-A.ics"];
 

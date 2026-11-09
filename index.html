@@ -101,9 +101,7 @@ button:disabled { opacity: .35; cursor: default; }
 /* Top */
 .toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .eyebrow { font-size: 14px; color: var(--muted); }
-.seg { display: inline-flex; margin-top: 8px; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.seg button { min-height: 36px; padding: 4px 14px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 600; font-size: 14px; }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.clsctl { margin-top: 8px; }
 h1 { font-size: clamp(32px, 8vw, 44px); line-height: 1.04; font-weight: 700; letter-spacing: -.015em; margin-top: 2px; }
 .date { color: var(--muted); margin-top: 4px; }
 .icon-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; flex: none; }
@@ -375,7 +373,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     <div class="toprow">
       <div>
         <p class="eyebrow" id="eyebrow">L1 LMD, Math, Stat et Info</p>
-        <div class="seg" id="clsctl" role="group" aria-label="Choisir la classe"><button type="button" data-c="A" aria-pressed="false">Classe A</button><button type="button" data-c="B" aria-pressed="false">Classe B</button></div>
+        <div class="seg-ctl clsctl" id="clsctl" role="group" aria-label="Choisir la classe"><button type="button" data-c="A" aria-pressed="false">Classe A</button><button type="button" data-c="B" aria-pressed="false">Classe B</button></div>
         <h1>Ma semaine</h1>
         <p class="date" id="date"></p>
       </div>
