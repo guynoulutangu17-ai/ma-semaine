@@ -402,6 +402,17 @@ td .c.off { opacity: .4; text-decoration: line-through; }
 .chip { min-height: 44px; }
 .task input { width: 44px; height: 44px; left: -8px; top: 2px; }
 #m-focus, #m-rest { min-height: 44px; }
+
+.planbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.planbar .hint { flex-basis: 100%; margin: 0; }
+.tag-c { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--ink); font-size: 12px; }
+.pe { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.pe-t { grid-column: 1; display: flex; align-items: center; gap: 6px; }
+.pe-x { grid-column: 1; }
+.pe-del { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); display: grid; place-items: center; }
+.pe-del svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.pe input { min-height: 44px; min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; padding: 4px 8px; }
+.pe-acts { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -506,6 +517,11 @@ td .c.off { opacity: .4; text-decoration: line-through; }
           <span id="psub"></span>
           <button class="link-btn" id="reset" type="button">Tout décocher</button>
         </div>
+      </div>
+      <div class="planbar" id="planbar">
+        <button class="btn" id="plan-edit" type="button" aria-pressed="false">Personnaliser mon planning</button>
+        <button class="link-btn" id="plan-reset-all" type="button" hidden>Rétablir toutes les suggestions</button>
+        <p class="hint" id="plan-hint">Ces séances sont des suggestions. Change l'heure ou le texte, supprime ou ajoute des séances selon tes habitudes.</p>
       </div>
       <div class="wstrip" id="wstrip" role="group" aria-label="Choisir une semaine"></div>
       <div id="study" style="display:flex;flex-direction:column;gap:12px"></div>
@@ -728,13 +744,13 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function hrs(min) { var h = min / 60; return (Math.round(h * 10) / 10).toString().replace(".", ",") + " h"; }
 
-  var store = { done: {}, q: {}, note: "", eoe: "", theme: "auto", rem: {}, off: {}, offDay: {} };
+  var store = { done: {}, q: {}, note: "", eoe: "", theme: "auto", rem: {}, off: {}, offDay: {}, plan: {}, icsRem: 0 };
   try {
     var raw = localStorage.getItem(KEY) || localStorage.getItem("l1b-planner-v1");
     if (raw) {
       var p0 = JSON.parse(raw);
       store.done = p0.done || {}; store.q = p0.q || {}; store.note = p0.note || ""; store.eoe = p0.eoe || ""; store.theme = p0.theme || "auto";
-      store.rem = p0.rem || {}; store.off = p0.off || {}; store.offDay = p0.offDay || {};
+      store.rem = p0.rem || {}; store.off = p0.off || {}; store.offDay = p0.offDay || {}; store.plan = p0.plan || {}; store.icsRem = p0.icsRem || 0;
     }
   } catch (e) {}
   /* older saves had no week prefix: they belong to week 1 */
@@ -1121,6 +1137,7 @@ function parseGrid(words, imgW) {
     try {
       localStorage.setItem("ma-semaine-custom", JSON.stringify({ g: g, start: d, r0: $("#imp-r0").value.trim(), r1: $("#imp-r1").value.trim() }));
       localStorage.setItem("ma-semaine-cls", "C");
+      var rawc = localStorage.getItem("l1c-planner-v2"); if (rawc) { var oc = JSON.parse(rawc); delete oc.plan; oc.done = {}; localStorage.setItem("l1c-planner-v2", JSON.stringify(oc)); }
     } catch (e) { $("#imp-err").textContent = "Impossible d'enregistrer sur cet appareil."; return; }
     location.reload();
   });
@@ -1327,28 +1344,44 @@ function parseGrid(words, imgW) {
   })();
 
   /* ---------- study ---------- */
-  var total = 0;
-  STUDY.forEach(function (d) { total += d.items.length; });
+  var total = 0, STUDY_BASE = STUDY;
+  function applyPlan() {
+    STUDY = STUDY_BASE.map(function (d) { var o = store.plan[d.k]; return o ? { k: d.k, n: d.n, dow: d.dow, note: d.note, items: o, custom: true } : d; });
+    total = 0; STUDY.forEach(function (d) { total += d.items.length; });
+  }
+  applyPlan();
   var CHECK = '<svg viewBox="0 0 20 20"><path d="M4.5 10.5l3.6 3.6L15.5 6.5"/></svg>';
   var CHEV = '<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
   var shownN = 0;
   function dayCount(d) { var c = 0; d.items.forEach(function (it, i) { if (store.done[wk + ":" + d.k + "-" + i]) c++; }); return c; }
   function weekCount(w) { var c = 0; STUDY.forEach(function (d) { d.items.forEach(function (it, i) { if (store.done[w + ":" + d.k + "-" + i]) c++; }); }); return c; }
+  function escA(t) { return String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function tparse(t) { var m = /(\d{1,2})h(\d{2})\s*-\s*(\d{1,2})h(\d{2})/.exec(t) || []; function f(x, y) { return x ? pad(+x) + ":" + y : ""; } return [f(m[1], m[2]), f(m[3], m[4])]; }
+  function tfmt(x, y) { function f(v) { if (!v) return ""; var q = v.split(":"); return q[0] + "h" + q[1]; } var a = f(x), b = f(y); return a && b ? a + "-" + b : a || b || "Heure libre"; }
+  var editing = false;
   function renderStudy() {
     var h = "";
     var todayK = null;
     if (started && wk === curWk) { var t = STUDY.filter(function (x) { return x.dow === today.getDay(); })[0]; todayK = t ? t.k : null; }
     STUDY.forEach(function (d) {
-      var isT = d.k === todayK, c = dayCount(d), full = c === d.items.length;
-      var open = isT || (!todayK && d.k === "lun");
+      var isT = d.k === todayK, c = dayCount(d), full = d.items.length > 0 && c === d.items.length;
+      var open = editing || isT || (!todayK && d.k === "lun");
       var items = "";
       d.items.forEach(function (it, i) {
         var id = d.k + "-" + i;
-        items += '<label class="task"><input type="checkbox" data-id="' + id + '"' + (store.done[wk + ":" + id] ? " checked" : "") + '><span class="box">' + CHECK + '</span><span class="tx"><span class="when">' + it[0] + '</span><span class="what">' + it[1] + "</span></span></label>";
+        if (editing) {
+          var tp = tparse(it[0]);
+          items += '<div class="pe" data-i="' + i + '"><div class="pe-t"><input type="time" class="pe-a" aria-label="' + d.n + ", début de la séance " + (i + 1) + '" value="' + tp[0] + '"><span aria-hidden="true">à</span><input type="time" class="pe-b" aria-label="' + d.n + ", fin de la séance " + (i + 1) + '" value="' + tp[1] + '"></div>' +
+            '<input type="text" class="pe-x" maxlength="80" aria-label="' + d.n + ", séance " + (i + 1) + '" value="' + escA(it[1]) + '"><button type="button" class="pe-del" aria-label="Supprimer la séance ' + (i + 1) + " de " + d.n + '"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>';
+        } else {
+          items += '<label class="task"><input type="checkbox" data-id="' + id + '"' + (store.done[wk + ":" + id] ? " checked" : "") + '><span class="box">' + CHECK + '</span><span class="tx"><span class="when">' + escA(it[0]) + '</span><span class="what">' + escA(it[1]) + "</span></span></label>";
+        }
       });
+      if (editing) items += '<div class="pe-acts"><button type="button" class="mini pe-add">Ajouter une séance</button>' + (d.custom ? '<button type="button" class="mini pe-reset">Rétablir la suggestion</button>' : "") + "</div>";
+      else if (!d.items.length) items += '<p class="note">Aucune séance ce jour. Utilise « Personnaliser mon planning » pour en ajouter.</p>';
       h += '<article class="dc' + (open ? " open" : "") + (isT ? " today" : "") + (full ? " complete" : "") + '" id="d-' + d.k + '" data-k="' + d.k + '">' +
-        '<button type="button" class="dc-head" aria-expanded="' + open + '" aria-controls="b-' + d.k + '"><span class="dc-title">' + d.n + '<span class="dd">' + sdl(d) + "</span>" + (isT ? '<span class="tag-today">aujourd\'hui</span>' : "") + '</span><span class="dc-meta"><span class="dc-count">' + c + "/" + d.items.length + '</span><span class="dc-mini"><i style="width:' + (c / d.items.length * 100) + '%"></i></span><span class="dc-check" aria-hidden="true">' + CHECK + "</span>" + CHEV + "</span></button>" +
-        '<div class="dc-body" id="b-' + d.k + '"><div class="dc-inner"><p class="note">' + d.note + "</p>" + items + "</div></div></article>";
+        '<button type="button" class="dc-head" aria-expanded="' + open + '" aria-controls="b-' + d.k + '"><span class="dc-title">' + d.n + '<span class="dd">' + sdl(d) + "</span>" + (isT ? '<span class="tag-today">aujourd\'hui</span>' : "") + '</span><span class="dc-meta"><span class="dc-count">' + c + "/" + d.items.length + '</span><span class="dc-mini"><i style="width:' + (d.items.length ? c / d.items.length * 100 : 0) + '%"></i></span><span class="dc-check" aria-hidden="true">' + CHECK + "</span>" + CHEV + "</span></button>" +
+        '<div class="dc-body" id="b-' + d.k + '"><div class="dc-inner"><p class="note">' + d.note + (d.custom ? '<span class="tag-c">personnalisé</span>' : "") + "</p>" + items + "</div></div></article>";
     });
     $("#study").innerHTML = h;
     updateProgress(false);
@@ -1371,21 +1404,57 @@ function parseGrid(words, imgW) {
       var c = dayCount(d); n += c;
       var el = document.getElementById("d-" + d.k); if (!el) return;
       el.querySelector(".dc-count").textContent = c + "/" + d.items.length;
-      el.querySelector(".dc-mini i").style.width = (c / d.items.length * 100) + "%";
-      el.classList.toggle("complete", c === d.items.length);
+      el.querySelector(".dc-mini i").style.width = (d.items.length ? c / d.items.length * 100 : 0) + "%";
+      el.classList.toggle("complete", d.items.length > 0 && c === d.items.length);
     });
-    $("#rfg").style.strokeDashoffset = CIRC * (1 - n / total);
+    $("#rfg").style.strokeDashoffset = CIRC * (1 - (total ? n / total : 0));
     $("#ptot").textContent = "sur " + total;
     tween($("#pnum"), shownN, n, 600, function (v) { return Math.round(v); });
     shownN = n;
-    var full = n === total;
+    var full = total > 0 && n === total;
     $("#prog").classList.toggle("full", full);
     var left = total - n;
-    $("#pmsg").textContent = full ? "Semaine complète. Bravo." : n === 0 ? "Rien de coché pour l'instant" : n < total / 2 ? "Bon début" : "Plus de la moitié faite";
+    $("#pmsg").textContent = full ? "Semaine complète. Bravo." : n === 0 ? "Rien de coché pour l'instant" : total === 0 ? "Aucune séance prévue" : n < total / 2 ? "Bon début" : "Plus de la moitié faite";
     $("#psub").textContent = full ? "Toutes les séances de la semaine sont faites." : n === 0 ? "Commencez par la séance de ce soir." : "Encore " + left + " séance" + (left > 1 ? "s" : "") + " cette semaine.";
     $("#reset").hidden = n === 0;
   }
+  function planItems(k) { if (!store.plan[k]) { var d = STUDY_BASE.filter(function (x) { return x.k === k; })[0]; store.plan[k] = JSON.parse(JSON.stringify(d.items)); } return store.plan[k]; }
+  function planRefresh(k, focusLast) {
+    save(); applyPlan(); renderStudy(); openDay(k, true); renderStrip();
+    $("#plan-reset-all").hidden = !editing || !Object.keys(store.plan).length;
+    if (focusLast) { var xs = document.querySelectorAll("#d-" + k + " .pe-x"); if (xs.length) xs[xs.length - 1].focus(); }
+  }
+  function dropDone(k, from) { /* retire les coches de ce jour (toutes semaines) à partir de l'index from, et décale les suivants */
+    var re = new RegExp("^(\\d+):" + k + "-(\\d+)$"), nd = {};
+    Object.keys(store.done).forEach(function (key) { var m = re.exec(key); if (!m) { nd[key] = true; return; } var i = +m[2]; if (i < from) nd[key] = true; else if (i > from && from >= 0) nd[m[1] + ":" + k + "-" + (i - 1)] = true; });
+    store.done = nd;
+  }
+  $("#plan-edit").addEventListener("click", function () {
+    editing = !editing; this.setAttribute("aria-pressed", editing ? "true" : "false");
+    this.textContent = editing ? "Terminer" : "Personnaliser mon planning";
+    $("#plan-reset-all").hidden = !editing || !Object.keys(store.plan).length;
+    $("#plan-hint").textContent = editing ? "Modifie l'heure ou le texte de chaque séance. Les changements sont enregistrés tout de suite." : "Ces séances sont des suggestions. Change l'heure ou le texte, supprime ou ajoute des séances selon tes habitudes.";
+    renderStudy();
+  });
+  $("#plan-reset-all").addEventListener("click", function () {
+    Object.keys(store.plan).forEach(function (k) { dropDone(k, -1); var re = new RegExp("^\\d+:" + k + "-"); Object.keys(store.done).forEach(function (x) { if (re.test(x)) delete store.done[x]; }); });
+    store.plan = {}; save(); applyPlan(); renderStudy(); renderStrip(); this.hidden = true; toast("Suggestions rétablies pour tous les jours.");
+  });
+  $("#study").addEventListener("click", function (e) {
+    var art = e.target.closest(".dc"); if (!art || !editing) return; var k = art.getAttribute("data-k");
+    var del = e.target.closest(".pe-del"), add = e.target.closest(".pe-add"), rs = e.target.closest(".pe-reset");
+    if (del) { var i = +del.closest(".pe").getAttribute("data-i"); planItems(k).splice(i, 1); dropDone(k, i); planRefresh(k); }
+    else if (add) { planItems(k).push(["19h00-20h00", "Nouvelle séance"]); planRefresh(k, true); }
+    else if (rs) { var re = new RegExp("^\\d+:" + k + "-"); Object.keys(store.done).forEach(function (x) { if (re.test(x)) delete store.done[x]; }); delete store.plan[k]; planRefresh(k); toast("Suggestion rétablie pour " + art.querySelector(".dc-title").firstChild.textContent + "."); }
+  });
   $("#study").addEventListener("change", function (e) {
+    var row = e.target.closest(".pe");
+    if (row && editing) {
+      var k = row.closest(".dc").getAttribute("data-k"), it = planItems(k)[+row.getAttribute("data-i")];
+      it[0] = tfmt(row.querySelector(".pe-a").value, row.querySelector(".pe-b").value);
+      it[1] = row.querySelector(".pe-x").value.trim() || "Séance";
+      save(); applyPlan(); $("#plan-reset-all").hidden = false; return;
+    }
     var id = e.target.getAttribute("data-id"); if (!id) return;
     var k = id.split("-")[0];
     var d = STUDY.filter(function (x) { return x.k === k; })[0];
