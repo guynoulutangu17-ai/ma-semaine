@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Ma semaine L1 LMD B",
+  "name": "Ma semaine L1 LMD",
   "short_name": "Ma semaine",
-  "description": "Horaire, rappels et planning d'étude de la L1 LMD B.",
+  "description": "Horaire, rappels et planning d'étude des classes L1 LMD A et B.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

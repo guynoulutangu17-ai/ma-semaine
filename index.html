@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f1f4f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1318" media="(prefers-color-scheme: dark)">
-<meta name="description" content="Horaire, rappels et planning d'étude de la L1 LMD B.">
+<meta name="description" content="Horaire, rappels et planning d'étude des classes L1 LMD A et B.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Ma semaine L1 LMD B</title>
+<title>Ma semaine L1 LMD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -101,6 +101,9 @@ button:disabled { opacity: .35; cursor: default; }
 /* Top */
 .toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .eyebrow { font-size: 14px; color: var(--muted); }
+.seg { display: inline-flex; margin-top: 8px; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.seg button { min-height: 36px; padding: 4px 14px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 600; font-size: 14px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 h1 { font-size: clamp(32px, 8vw, 44px); line-height: 1.04; font-weight: 700; letter-spacing: -.015em; margin-top: 2px; }
 .date { color: var(--muted); margin-top: 4px; }
 .icon-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; flex: none; }
@@ -371,7 +374,8 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   <header class="enter" style="--e:0">
     <div class="toprow">
       <div>
-        <p class="eyebrow">L1 LMD B, Math, Stat et Info</p>
+        <p class="eyebrow" id="eyebrow">L1 LMD, Math, Stat et Info</p>
+        <div class="seg" id="clsctl" role="group" aria-label="Choisir la classe"><button type="button" data-c="A" aria-pressed="false">Classe A</button><button type="button" data-c="B" aria-pressed="false">Classe B</button></div>
         <h1>Ma semaine</h1>
         <p class="date" id="date"></p>
       </div>
@@ -450,7 +454,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       <div id="weekview" hidden style="display:flex;flex-direction:column;gap:14px">
         <div class="legend" id="legend" role="group" aria-label="Mettre une matière en évidence"></div>
         <div class="scroll"><table id="grid"></table></div>
-        <p class="hint">Faites glisser le tableau pour voir toute la semaine. Touchez une matière pour la mettre en évidence, touchez un cours pour ouvrir sa journée. Salle K12 les jours pairs, Cave A les jours impairs, selon la date.</p>
+        <p class="hint" id="weekhint">Faites glisser le tableau pour voir toute la semaine.</p>
         <div class="hours" id="hours"></div>
       </div>
     </section>
@@ -510,7 +514,9 @@ td .c.off { opacity: .4; text-decoration: line-through; }
 (function () {
   "use strict";
   document.documentElement.lang = "fr";
-  var KEY = "l1b-planner-v2";
+  var CLS = "B";
+  try { if (localStorage.getItem("ma-semaine-cls") === "A") CLS = "A"; } catch (e) {}
+  var KEY = CLS === "A" ? "l1a-planner-v2" : "l1b-planner-v2";
   var RM = window.matchMedia("(prefers-reduced-motion: reduce)");
   var START = new Date(2026, 10, 9);
 
@@ -521,7 +527,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     eoe: { n: "E.O.E", s: "E.O.E", t: "Pr. Sumey" }
   };
   var SLOTS = [["08h30", "10h30"], ["10h30", "12h30"], ["13h30", "15h30"], ["15h30", "17h00"]];
-  var DAYS = [
+  var DAYS_B = [
     { k: "lun", n: "Lundi", a: "Lun", dow: 1, g: ["ang", "ang", "log", "log"] },
     { k: "mar", n: "Mardi", a: "Mar", dow: 2, g: ["sta", "sta", "log", "log"] },
     { k: "mer", n: "Mercredi", a: "Mer", dow: 3, g: ["eoe", "eoe", null, null] },
@@ -529,13 +535,13 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     { k: "ven", n: "Vendredi", a: "Ven", dow: 5, g: ["ang", "eoe", null, "log"] },
     { k: "sam", n: "Samedi", a: "Sam", dow: 6, g: ["ang", "ang", null, null] }
   ];
-  var FREE = {
+  var FREE_B = {
     mer: "Après-midi libre. Créneau conseillé : 15h-17h, exercices de Logique.",
     jeu: "Après-midi libre. Créneau conseillé : 15h-16h30, exercices de Statistique.",
     ven: "Pause de 12h30 à 15h30 avant la Logique : repas et repos.",
     sam: "Reste de la journée libre."
   };
-  var STUDY = [
+  var STUDY_B = [
     { k: "lun", n: "Lundi", dow: 1, note: "Journée lourde : soir léger.", items: [
       ["19h00-20h00", "Logique : relecture et 2 à 3 exercices"],
       ["20h15-20h45", "Anglais : relire le cours"] ] },
@@ -560,7 +566,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       ["16h00-17h00", "Rattraper ce qui est flou"],
       ["19h00-19h30", "Préparer lundi, dormir tôt"] ] }
   ];
-  var QUESTIONS = [
+  var QUESTIONS_B = [
     ["q1", "Demander ce que signifie E.O.E"],
     ["q2", "Demander quel livre ou polycopié suivre pour chaque cours"],
     ["q3", "Demander comment chaque professeur évalue (interrogations, travaux, examen)"],
@@ -568,6 +574,53 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     ["q5", "Repérer la salle K12 et le chemin le plus court"],
     ["q6", "Noter la matière qui pose le plus de difficultés"]
   ];
+
+  var DAYS_A = [
+    { k: "lun", n: "Lundi", a: "Lun", dow: 1, g: ["eoe", "eoe", null, null] },
+    { k: "mar", n: "Mardi", a: "Mar", dow: 2, g: ["ang", "ang", "sta", "sta"] },
+    { k: "mer", n: "Mercredi", a: "Mer", dow: 3, g: ["sta", "sta", "log", "log"] },
+    { k: "jeu", n: "Jeudi", a: "Jeu", dow: 4, g: ["ang", "ang", "log", "log"] },
+    { k: "ven", n: "Vendredi", a: "Ven", dow: 5, g: ["eoe", "ang", "log", null] },
+    { k: "sam", n: "Samedi", a: "Sam", dow: 6, g: [null, null, null, null] }
+  ];
+  var FREE_A = {
+    lun: "Après-midi libre. Créneau conseillé : 15h-16h30, relire les notes d'E.O.E.",
+    ven: "Cours terminés à 15h30 : repos, puis relecture de la Logique.",
+    sam: "Pas de cours le samedi."
+  };
+  var STUDY_A = [
+    { k: "lun", n: "Lundi", dow: 1, note: "Après-midi libre.", items: [
+      ["15h00-16h30", "E.O.E : relire les notes du matin"],
+      ["19h00-20h00", "Anglais : vocabulaire et lecture avant mardi"],
+      ["20h15-20h45", "Statistique : lire le chapitre avant mardi"] ] },
+    { k: "mar", n: "Mardi", dow: 2, note: "Journée lourde : soir léger.", items: [
+      ["19h00-20h00", "Statistique : refaire les exemples du cours"],
+      ["20h15-20h45", "Anglais : relire le cours"] ] },
+    { k: "mer", n: "Mercredi", dow: 3, note: "Journée lourde : soir léger.", items: [
+      ["19h00-20h00", "Logique : relecture et 2 à 3 exercices"],
+      ["20h15-20h45", "Statistique : compléter les notes"] ] },
+    { k: "jeu", n: "Jeudi", dow: 4, note: "Journée lourde : soir léger.", items: [
+      ["19h00-20h00", "Logique : exercices"],
+      ["20h15-20h45", "Anglais : relire le cours"] ] },
+    { k: "ven", n: "Vendredi", dow: 5, note: "Cours finis à 15h30.", items: [
+      ["17h30-18h30", "Logique : relire le cours de l'après-midi"],
+      ["19h00-19h30", "E.O.E : relecture"] ] },
+    { k: "sam", n: "Samedi", dow: 6, note: "Pas de cours : bonne journée de travail.", items: [
+      ["09h00-11h00", "Statistique : exercices de la semaine"],
+      ["15h00-16h30", "Logique : exercices"] ] },
+    { k: "dim", n: "Dimanche", dow: 0, note: "Révision générale, puis sommeil tôt.", items: [
+      ["10h00-12h00", "Logique et Statistique : exercices"],
+      ["16h00-17h00", "Rattraper ce qui est flou"],
+      ["19h00-19h30", "Préparer lundi, dormir tôt"] ] }
+  ];
+  var QUESTIONS_A = QUESTIONS_B.map(function (q) {
+    if (q[0] === "q4") return ["q4", "Repérer où se trouve la salle K11"];
+    if (q[0] === "q5") return ["q5", "Repérer la salle K26 et le chemin le plus court"];
+    return q;
+  });
+  var IS_A = CLS === "A";
+  var DAYS = IS_A ? DAYS_A : DAYS_B, FREE = IS_A ? FREE_A : FREE_B, STUDY = IS_A ? STUDY_A : STUDY_B, QUESTIONS = IS_A ? QUESTIONS_A : QUESTIONS_B;
+  var ROOMS = IS_A ? ["K11", "K26"] : ["K12", "Cave A"];
 
   /* ---------- helpers ---------- */
   function $(s) { return document.querySelector(s); }
@@ -577,7 +630,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function fmtLong(d) { return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); }
   function fmtShort(d) { return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }); }
-  function roomFor(d) { return d.getDate() % 2 === 0 ? "K12" : "Cave A"; }
+  function roomFor(d) { return d.getDate() % 2 === 0 ? ROOMS[0] : ROOMS[1]; }
   function pm(s) { var p = s.split("h"); return +p[0] * 60 + +p[1]; }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function hrs(min) { var h = min / 60; return (Math.round(h * 10) / 10).toString().replace(".", ",") + " h"; }
@@ -599,6 +652,19 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   })();
   function isOff(dk, a) { return !!(store.offDay[dk] || store.off[dk + "|" + a]); }
   function hasRem(d) { return (store.rem[dkey(d)] || []).some(function (r) { return !r.done; }); }
+  (function initClass() {
+    $("#eyebrow").textContent = "L1 LMD " + CLS + ", Math, Stat et Info";
+    $("#weekhint").textContent = "Faites glisser le tableau pour voir toute la semaine. Touchez une matière pour la mettre en évidence, touchez un cours pour ouvrir sa journée. Salle " + ROOMS[0] + " les jours pairs, " + ROOMS[1] + " les jours impairs, selon la date." + (IS_A ? " L'horaire de la classe A ne mentionne pas de date de début : le 9 novembre est supposé, comme pour la classe B." : "");
+    $$("#clsctl button").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-c") === CLS ? "true" : "false");
+      b.addEventListener("click", function () {
+        if (b.getAttribute("data-c") === CLS) return;
+        try { localStorage.setItem("ma-semaine-cls", b.getAttribute("data-c")); } catch (e) {}
+        location.reload();
+      });
+    });
+    var ic = $("#ics"); if (ic) ic.setAttribute("href", "Cours-L1-LMD-" + CLS + ".ics");
+  })();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 
   function blocksOf(d) {
