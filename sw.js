@@ -1,7 +1,7 @@
 /* Mode hors connexion : les fichiers de l'application sont gardés sur le téléphone.
    Réseau d'abord (nouvelle version tout de suite), copie locale si le réseau est absent ou trop lent.
    Pour publier une nouvelle version, changez le numéro ci-dessous. */
-var CACHE = "ma-semaine-v7";
+var CACHE = "ma-semaine-v8";
 var CORE = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png",
             "icon-maskable-512.png", "apple-touch-icon.png"];
 
@@ -28,7 +28,7 @@ self.addEventListener("fetch", function (e) {
       });
     };
     var net = new Promise(function (resolve, reject) {
-      var done = false, timer = setTimeout(function () { if (!done) reject(new Error("lent")); }, 4000);
+      var done = false, timer = setTimeout(function () { if (!done) reject(new Error("lent")); }, 3000);
       fetch(req, { cache: "no-cache" }).then(function (res) {
         done = true; clearTimeout(timer);
         if (res && (res.ok || res.type === "opaque")) cache.put(req, res.clone());

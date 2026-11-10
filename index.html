@@ -105,6 +105,8 @@ button:disabled { opacity: .35; cursor: default; }
 .col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 /* Top */
 .toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.toprow > div { min-width: 0; }
+@media (max-width: 400px) { .clsctl button { padding: 4px 5px; font-size: 13px; } }
 .eyebrow { font-size: 14px; color: var(--muted); }
 .clsctl { margin-top: 8px; max-width: 100%; }
 .clsctl button { white-space: nowrap; padding: 4px 12px; }
@@ -246,7 +248,7 @@ td .c.now { box-shadow: inset 0 0 0 2px var(--sx); animation: breathe 2.4s ease-
 .prog .txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
 .prog .txt strong { font-family: var(--font-display); font-size: 20px; line-height: 1.2; }
 .prog .txt span { color: var(--muted); font-size: 15px; }
-.link-btn { align-self: flex-start; min-height: 40px; border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font-size: 15px; }
+.link-btn { align-self: flex-start; min-height: 44px; border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font-size: 15px; }
 
 .dc { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; scroll-margin-top: 12px; transition: border-color .25s; }
 .dc.today { border-color: var(--accent); }
@@ -377,7 +379,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
 .imp-box h2 { margin: 0; font-size: 20px; }
 .imp-p { margin: 0; font-size: 15px; line-height: 1.5; }
 .imp-warn { color: var(--muted); font-size: 14px; }
-.imp-file { position: relative; justify-content: center; cursor: pointer; }
+.imp-file { min-height: 44px; position: relative; justify-content: center; cursor: pointer; }
 .imp-file input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .imp-status { margin: 0; min-height: 1.5em; font-size: 14px; color: var(--muted); }
 .imp-err { margin: 0; color: #b42318; font-size: 14px; min-height: 1.2em; }
@@ -396,6 +398,9 @@ td .c.off { opacity: .4; text-decoration: line-through; }
 .imp-x { align-self: flex-start; }
 .icssel { gap: 8px; cursor: default; }
 .icssel select { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; padding: 2px 6px; }
+.firstrun { margin: 0 0 14px; padding: 16px; border: 2px solid var(--accent); border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+.firstrun h2 { margin: 0; font-size: 18px; }
+.firstrun p { margin: 0; font-size: 15px; line-height: 1.45; }
 .install-note { margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 15px; line-height: 1.45; }
 /* zones tactiles de 44 px */
 .seg-ctl button { min-height: 44px; }
@@ -432,6 +437,11 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     </div>
   </header>
 
+  <section class="firstrun" id="firstrun" aria-labelledby="fr-t" hidden>
+    <h2 id="fr-t">Quelle est ta classe ?</h2>
+    <p>Choisis-la pour afficher le bon horaire et les bonnes salles. Tu pourras changer à tout moment avec les boutons du haut.</p>
+    <div class="imp-btns"><button type="button" class="btn primary" data-fr="A">Classe A</button><button type="button" class="btn primary" data-fr="B">Classe B</button><button type="button" class="btn" data-fr="C">Mon horaire</button></div>
+  </section>
   <main class="col">
     <section class="hero enter" id="hero" style="--e:1" aria-label="Prochain cours">
       <div class="hero-top"><span class="hero-label"><span class="live-dot"></span><span id="hl">Prochain cours</span></span><span class="hero-room" id="hr"></span></div>
@@ -779,11 +789,22 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     $("#eyebrow").textContent = "L1 LMD " + CLS + ", Math, Stat et Info"; $("#eyebrow").hidden = IS_C;
     var rt = ROOMS[0] || ROOMS[1] ? " Salle " + ROOMS[0] + " les jours pairs (mardi, jeudi, samedi), " + ROOMS[1] + " les jours impairs (lundi, mercredi, vendredi)." : "";
     $("#weekhint").textContent = "Faites glisser le tableau pour voir toute la semaine. Touchez une matière pour la mettre en évidence, touchez un cours pour ouvrir sa journée." + rt + (IS_A ? " L'horaire de la classe A ne mentionne pas de date de début : le 9 novembre est supposé, comme pour la classe B." : "");
+    var seen = true;
+    try { seen = !!(localStorage.getItem("ma-semaine-cls") || localStorage.getItem("l1b-planner-v2") || localStorage.getItem("l1a-planner-v2") || localStorage.getItem("l1c-planner-v2")); } catch (e) {}
+    $("#firstrun").hidden = seen;
+    $$("#firstrun [data-fr]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var c = b.getAttribute("data-fr");
+        if (c === "C") { var has = false; try { has = !!localStorage.getItem("ma-semaine-custom"); } catch (e) {} if (!has) { impOpen(); return; } }
+        try { localStorage.setItem("ma-semaine-cls", c); } catch (e) {}
+        location.reload();
+      });
+    });
     $$("#clsctl button").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-c") === CLS ? "true" : "false");
       b.addEventListener("click", function () {
         var c = b.getAttribute("data-c");
-        if (c === CLS) return;
+        if (c === CLS) { try { localStorage.setItem("ma-semaine-cls", c); } catch (e) {} $("#firstrun").hidden = true; return; }
         if (c === "C") { var has = false; try { has = !!localStorage.getItem("ma-semaine-custom"); } catch (e) {} if (!has) { impOpen(); return; } }
         try { localStorage.setItem("ma-semaine-cls", c); } catch (e) {}
         location.reload();
@@ -1083,8 +1104,9 @@ function parseGrid(words, imgW) {
   /* ---------- importer l'horaire (photo) ---------- */
   var impFrom = null;
   var SLOT_LBL = SLOTS.map(function (x) { return x[0] + "-" + x[1]; });
-  function impOpen() { $("#imp-title").textContent = "Importer mon horaire"; impFrom = document.activeElement; $("#imp").hidden = false; $("#imp-s1").hidden = false; $("#imp-s2").hidden = true; $("#imp-s3").hidden = true; $("#imp-status").textContent = ""; document.body.style.overflow = "hidden"; $("#imp-manual").focus(); }
-  function impClose() { $("#imp").hidden = true; document.body.style.overflow = ""; if (impFrom && impFrom.focus) impFrom.focus(); }
+  function impOpen() { $("#imp-title").textContent = "Importer mon horaire"; impFrom = document.activeElement; $("#imp").hidden = false; bgInert(true); $("#imp-s1").hidden = false; $("#imp-s2").hidden = true; $("#imp-s3").hidden = true; $("#imp-status").textContent = ""; document.body.style.overflow = "hidden"; $("#imp-manual").focus(); }
+  function bgInert(on) { Array.prototype.forEach.call(document.body.children, function (el) { if (el.id !== "imp" && el.id !== "toast" && el.tagName !== "SCRIPT") { if (on) el.setAttribute("inert", ""); else el.removeAttribute("inert"); } }); }
+  function impClose() { $("#imp").hidden = true; document.body.style.overflow = ""; bgInert(false); if (impFrom && impFrom.focus) impFrom.focus(); }
   function impEditor(grid, date, note, blankRooms) {
     var cur = CUSTOM && CUSTOM.g ? CUSTOM : null;
     var h = '<tr><th class="d"></th>' + SLOT_LBL.map(function (l) { return "<th>" + l.replace("-", "<br>") + "</th>"; }).join("") + "</tr>";
@@ -1141,7 +1163,7 @@ function parseGrid(words, imgW) {
   $("#imp-fromA").addEventListener("click", function () { impEditor(copyGrid(DAYS_A), "2026-11-09", "Horaire de la classe A copié. Change ce qui est différent et indique tes salles.", true); });
   $("#imp-fromB").addEventListener("click", function () { impEditor(copyGrid(DAYS_B), "2026-11-09", "Horaire de la classe B copié. Change ce qui est différent et indique tes salles.", true); });
   function roomsOpen() {
-    impFrom = document.activeElement; $("#imp").hidden = false; $("#imp-title").textContent = "Mes salles";
+    impFrom = document.activeElement; $("#imp").hidden = false; bgInert(true); $("#imp-title").textContent = "Mes salles";
     $("#imp-s1").hidden = true; $("#imp-s2").hidden = true; $("#imp-s3").hidden = false; document.body.style.overflow = "hidden";
     $("#rm-r0").value = CUSTOM && CUSTOM.r0 || ""; $("#rm-r1").value = CUSTOM && CUSTOM.r1 || ""; $("#rm-err").textContent = ""; $("#rm-r0").focus();
   }
@@ -1158,7 +1180,17 @@ function parseGrid(words, imgW) {
   $("#imp-manual").addEventListener("click", function () { impEditor(null, null, "Choisis la matière de chaque créneau. Laisse « — » quand il n'y a pas de cours."); });
   $("#imp-back").addEventListener("click", function () { $("#imp-s2").hidden = true; $("#imp-s1").hidden = false; $("#imp-manual").focus(); });
   $("#imp-file").addEventListener("change", function () { var f = this.files && this.files[0]; if (f) impRead(f); this.value = ""; });
-  $("#imp").addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); impClose(); } });
+  document.addEventListener("keydown", function (e) {
+    if ($("#imp").hidden) return;
+    if (e.key === "Escape") { e.preventDefault(); impClose(); return; }
+    if (e.key !== "Tab") return;
+    var f = Array.prototype.filter.call($("#imp").querySelectorAll("button, input, select, textarea, a[href]"), function (x) { return !x.disabled && x.offsetParent !== null; });
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1], a = document.activeElement;
+    if (!$("#imp").contains(a)) { e.preventDefault(); first.focus(); }
+    else if (e.shiftKey && a === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
+  });
   $("#imp-save").addEventListener("click", function () {
     var g = {}, n = 0;
     DAYNAMES.forEach(function (d) { g[d[0]] = [null, null, null, null]; });
