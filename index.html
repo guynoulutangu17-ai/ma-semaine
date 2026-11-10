@@ -578,17 +578,17 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       <button type="button" class="btn imp-x" id="imp-cancel1">Fermer</button>
     </div>
     <div id="imp-s3" hidden>
-      <p class="imp-p">Indique les salles de ton horaire. Elles s'affichent selon la date : un nom pour les jours pairs, un autre pour les jours impairs. Laisse vide pour ne rien afficher.</p>
-      <div class="imp-row"><label for="rm-r0">Salle jours pairs</label><input type="text" id="rm-r0" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
-      <div class="imp-row"><label for="rm-r1">Salle jours impairs</label><input type="text" id="rm-r1" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
+      <p class="imp-p">Indique les salles de ton horaire. Un nom pour les jours pairs (mardi, jeudi, samedi), un autre pour les jours impairs (lundi, mercredi, vendredi). Laisse vide pour ne rien afficher.</p>
+      <div class="imp-row"><label for="rm-r0">Salle jours pairs (mar, jeu, sam)</label><input type="text" id="rm-r0" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
+      <div class="imp-row"><label for="rm-r1">Salle jours impairs (lun, mer, ven)</label><input type="text" id="rm-r1" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
       <p class="imp-err" id="rm-err" role="alert"></p>
       <div class="imp-btns"><button type="button" class="btn primary" id="rm-save">Enregistrer les salles</button><button type="button" class="btn" id="rm-cancel">Fermer</button></div>
     </div>
     <div id="imp-s2" hidden>
       <p class="imp-p" id="imp-note"></p>
       <div class="imp-row"><label for="imp-date">Début des cours</label><input type="date" id="imp-date"></div>
-      <div class="imp-row"><label for="imp-r0">Salle jours pairs</label><input type="text" id="imp-r0" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
-      <div class="imp-row"><label for="imp-r1">Salle jours impairs</label><input type="text" id="imp-r1" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
+      <div class="imp-row"><label for="imp-r0">Salle jours pairs (mar, jeu, sam)</label><input type="text" id="imp-r0" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
+      <div class="imp-row"><label for="imp-r1">Salle jours impairs (lun, mer, ven)</label><input type="text" id="imp-r1" placeholder="Nom de la salle" autocomplete="off" maxlength="30"></div>
       <div class="imp-scroll"><table class="imp-grid" id="imp-grid"></table></div>
       <p class="imp-err" id="imp-err" role="alert"></p>
       <div class="imp-btns"><button type="button" class="btn primary" id="imp-save">Enregistrer mon horaire</button><button type="button" class="btn" id="imp-back">Retour</button></div>
@@ -751,7 +751,8 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function fmtLong(d) { return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); }
   function fmtShort(d) { return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }); }
-  function roomFor(d) { return d.getDate() % 2 === 0 ? ROOMS[0] : ROOMS[1]; }
+  /* jour pair / impair = rang du jour dans la semaine : lundi 1, mardi 2 … samedi 6 */
+  function roomFor(d) { return ((d.getDay() + 6) % 7 + 1) % 2 === 0 ? ROOMS[0] : ROOMS[1]; }
   function roomTxt(d) { var r = roomFor(d); return r ? (/^salle\b/i.test(r) ? r : "Salle " + r) : ""; }
   function pm(s) { var p = s.split("h"); return +p[0] * 60 + +p[1]; }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
@@ -776,7 +777,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   function hasRem(d) { return (store.rem[dkey(d)] || []).some(function (r) { return !r.done; }); }
   (function initClass() {
     $("#eyebrow").textContent = "L1 LMD " + CLS + ", Math, Stat et Info"; $("#eyebrow").hidden = IS_C;
-    var rt = ROOMS[0] || ROOMS[1] ? " Salle " + ROOMS[0] + " les jours pairs, " + ROOMS[1] + " les jours impairs, selon la date." : "";
+    var rt = ROOMS[0] || ROOMS[1] ? " Salle " + ROOMS[0] + " les jours pairs (mardi, jeudi, samedi), " + ROOMS[1] + " les jours impairs (lundi, mercredi, vendredi)." : "";
     $("#weekhint").textContent = "Faites glisser le tableau pour voir toute la semaine. Touchez une matière pour la mettre en évidence, touchez un cours pour ouvrir sa journée." + rt + (IS_A ? " L'horaire de la classe A ne mentionne pas de date de début : le 9 novembre est supposé, comme pour la classe B." : "");
     $$("#clsctl button").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-c") === CLS ? "true" : "false");
