@@ -561,11 +561,6 @@ td .c.off { opacity: .4; text-decoration: line-through; }
         <p class="allgood" id="allgood">Tout est repéré. Vous êtes prêt pour la semaine.</p>
       </div>
       <div class="card">
-        <h3>Que veut dire E.O.E ?</h3>
-        <label class="lbl" for="eoe">Notez l'intitulé complet après le premier cours</label>
-        <input type="text" id="eoe" autocomplete="off" placeholder="Intitulé complet du cours">
-      </div>
-      <div class="card">
         <h3>Mes notes de la première semaine</h3>
         <label class="lbl" for="note">Ce qui est clair, ce qui ne l'est pas, les livres conseillés</label>
         <textarea id="note" placeholder="Matières difficiles, questions pour les professeurs..."></textarea>
@@ -579,7 +574,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     <h2 id="imp-title">Importer mon horaire</h2>
     <div id="imp-s1">
       <p class="imp-p">Prends en photo l'horaire affiché (ou choisis une capture d'écran). Cadre bien le tableau, en entier, sans reflet. L'application essaie de lire les jours et les matières, puis tu vérifies chaque case.</p>
-      <p class="imp-p imp-warn">Fonctionne pour les matières Anglais, Statistique, Logique et E.O.E (L1 LMD). La lecture demande Internet la première fois.</p>
+      <p class="imp-p imp-warn">Fonctionne pour les matières Anglais, Statistique, Logique et Expression orale et écrite (E.O.E). Le lecteur se télécharge au premier usage (environ 5 Mo).</p>
       <label class="btn primary imp-file"><input type="file" id="imp-file" accept="image/*"><span>Prendre une photo ou choisir une image</span></label>
       <button type="button" class="btn" id="imp-manual">Saisir à la main</button>
       <p class="imp-p imp-warn">Tu as le même horaire qu'une de ces classes, mais pas les mêmes salles ?</p>
@@ -629,7 +624,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     ang: { n: "Anglais", s: "Anglais", t: "Dr Grace Mupoy / Ct. Etshim" },
     sta: { n: "Statistique descriptive", s: "Stat. descr.", t: "Pr. Butinda" },
     log: { n: "Logique math", s: "Logique math", t: "Pr. Mopondi" },
-    eoe: { n: "E.O.E", s: "E.O.E", t: "Pr. Sumey" }
+    eoe: { n: "Expression orale et écrite", s: "E.O.E", t: "Pr. Sumey" }
   };
   var SLOTS = [["08h30", "10h30"], ["10h30", "12h30"], ["13h30", "15h30"], ["15h30", "17h00"]];
   var DAYS_B = [
@@ -655,15 +650,15 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       ["20h15-20h45", "Logique : compléter les notes"] ] },
     { k: "mer", n: "Mercredi", dow: 3, note: "Après-midi libre.", items: [
       ["15h00-17h00", "Logique : exercices des cours de lundi et mardi"],
-      ["19h00-20h00", "E.O.E : relecture"],
+      ["19h00-20h00", "Expression orale et écrite : relecture"],
       ["20h15-20h45", "Anglais : 10 min de vocabulaire et lecture"] ] },
     { k: "jeu", n: "Jeudi", dow: 4, note: "Après-midi libre.", items: [
       ["15h00-16h30", "Statistique : exercices"],
       ["19h00-20h00", "Logique : exercices"],
-      ["20h15-20h45", "E.O.E : mettre les notes au propre"] ] },
+      ["20h15-20h45", "Expression orale et écrite : mettre les notes au propre"] ] },
     { k: "ven", n: "Vendredi", dow: 5, note: "Pause de 12h30 à 15h30, puis repos après 20h15.", items: [
       ["19h00-19h45", "Logique : relire le cours de l'après-midi"],
-      ["19h45-20h15", "E.O.E : relecture"] ] },
+      ["19h45-20h15", "Expression orale et écrite : relecture"] ] },
     { k: "sam", n: "Samedi", dow: 6, note: "Après-midi de repos.", items: [
       ["19h00-20h00", "Anglais : relire la semaine"] ] },
     { k: "dim", n: "Dimanche", dow: 0, note: "Révision générale, puis sommeil tôt.", items: [
@@ -672,7 +667,6 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       ["19h00-19h30", "Préparer lundi, dormir tôt"] ] }
   ];
   var QUESTIONS_B = [
-    ["q1", "Demander ce que signifie E.O.E"],
     ["q2", "Demander quel livre ou polycopié suivre pour chaque cours"],
     ["q3", "Demander comment chaque professeur évalue (interrogations, travaux, examen)"],
     ["q4", "Repérer où se trouve la salle Cave A"],
@@ -689,13 +683,13 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     { k: "sam", n: "Samedi", a: "Sam", dow: 6, g: [null, null, null, null] }
   ];
   var FREE_A = {
-    lun: "Après-midi libre. Créneau conseillé : 15h-16h30, relire les notes d'E.O.E.",
+    lun: "Après-midi libre. Créneau conseillé : 15h-16h30, relire les notes d'expression orale et écrite.",
     ven: "Cours terminés à 15h30 : repos, puis relecture de la Logique.",
     sam: "Pas de cours le samedi."
   };
   var STUDY_A = [
     { k: "lun", n: "Lundi", dow: 1, note: "Après-midi libre.", items: [
-      ["15h00-16h30", "E.O.E : relire les notes du matin"],
+      ["15h00-16h30", "Expression orale et écrite : relire les notes du matin"],
       ["19h00-20h00", "Anglais : vocabulaire et lecture avant mardi"],
       ["20h15-20h45", "Statistique : lire le chapitre avant mardi"] ] },
     { k: "mar", n: "Mardi", dow: 2, note: "Journée lourde : soir léger.", items: [
@@ -709,7 +703,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       ["20h15-20h45", "Anglais : relire le cours"] ] },
     { k: "ven", n: "Vendredi", dow: 5, note: "Cours finis à 15h30.", items: [
       ["17h30-18h30", "Logique : relire le cours de l'après-midi"],
-      ["19h00-19h30", "E.O.E : relecture"] ] },
+      ["19h00-19h30", "Expression orale et écrite : relecture"] ] },
     { k: "sam", n: "Samedi", dow: 6, note: "Pas de cours : bonne journée de travail.", items: [
       ["09h00-11h00", "Statistique : exercices de la semaine"],
       ["15h00-16h30", "Logique : exercices"] ] },
@@ -728,7 +722,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
   var ROOMS = IS_A ? ["K11", "K26"] : ["K12", "Cave A"];
   var DAYNAMES = [["lun", "Lundi", "Lun", 1], ["mar", "Mardi", "Mar", 2], ["mer", "Mercredi", "Mer", 3], ["jeu", "Jeudi", "Jeu", 4], ["ven", "Vendredi", "Ven", 5], ["sam", "Samedi", "Sam", 6]];
   if (IS_C) {
-    var SN = { ang: "Anglais", sta: "Statistique", log: "Logique", eoe: "E.O.E" }, PRI = ["log", "sta", "ang", "eoe"];
+    var SN = { ang: "Anglais", sta: "Statistique", log: "Logique", eoe: "Expression orale et écrite" }, PRI = ["log", "sta", "ang", "eoe"];
     DAYS = DAYNAMES.map(function (x) { var g = (CUSTOM.g[x[0]] || []).slice(0, 4); while (g.length < 4) g.push(null); return { k: x[0], n: x[1], a: x[2], dow: x[3], g: g }; });
     FREE = {};
     STUDY = DAYS.map(function (d) {
@@ -1053,7 +1047,7 @@ function parseGrid(words, imgW) {
   function lev(a, b) { var m = [], i, j; for (i = 0; i <= a.length; i++) m[i] = [i]; for (j = 1; j <= b.length; j++) m[0][j] = j;
     for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++) m[i][j] = Math.min(m[i-1][j] + 1, m[i][j-1] + 1, m[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)); return m[a.length][b.length]; }
   var DAYK = [["lundi","lun"],["mardi","mar"],["mercredi","mer"],["jeudi","jeu"],["vendredi","ven"],["samedi","sam"]];
-  var SUBK = [["anglais","ang"],["statistique","sta"],["logique","log"],["eoe","eoe"]];
+  var SUBK = [["anglais","ang"],["statistique","sta"],["logique","log"],["eoe","eoe"],["expression","eoe"]];
   function match(n, list, tol) { if (n.length < 3) return null; var best = null, bd = 99;
     list.forEach(function (it) { var d = lev(n, it[0]); if (d <= (it[0].length <= 3 ? 0 : tol) && d < bd) { bd = d; best = it[1]; } }); return best; }
   var TEA = [["sumey","eoe"],["butinda","sta"],["mopondi","log"],["mupoy","ang"],["etshim","ang"]];
@@ -1115,7 +1109,7 @@ function parseGrid(words, imgW) {
       for (var i = 0; i < 4; i++) {
         var v = (grid ? grid[di][i] : cur && cur.g[d[0]] ? cur.g[d[0]][i] : null) || "";
         h += '<td><select aria-label="' + d[1] + " " + SLOT_LBL[i].replace("-", " à ") + '" data-d="' + d[0] + '" data-i="' + i + '">' +
-          [["", "—", "Aucun cours"], ["ang", "Ang.", "Anglais"], ["sta", "Stat.", "Statistique"], ["log", "Log.", "Logique"], ["eoe", "E.O.E", "E.O.E"]].map(function (o) { return '<option value="' + o[0] + '" aria-label="' + o[2] + '"' + (o[0] === v ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></td>";
+          [["", "—", "Aucun cours"], ["ang", "Ang.", "Anglais"], ["sta", "Stat.", "Statistique"], ["log", "Log.", "Logique"], ["eoe", "E.O.E", "Expression orale et écrite"]].map(function (o) { return '<option value="' + o[0] + '" aria-label="' + o[2] + '"' + (o[0] === v ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></td>";
       }
       h += "</tr>";
     });
@@ -1129,7 +1123,7 @@ function parseGrid(words, imgW) {
   function loadTess() {
     return new Promise(function (res, rej) {
       if (window.Tesseract) return res(window.Tesseract);
-      var sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+      var sc = document.createElement("script"); sc.src = "vendor/tesseract/tesseract.min.js";
       sc.onload = function () { window.Tesseract ? res(window.Tesseract) : rej(new Error("tess")); }; sc.onerror = function () { rej(new Error("net")); };
       document.head.appendChild(sc);
     });
@@ -1144,8 +1138,8 @@ function parseGrid(words, imgW) {
   function impRead(file) {
     var st = $("#imp-status"); st.textContent = "Préparation de l'image…";
     var canvas, T;
-    toCanvas(file).then(function (c) { canvas = c; st.textContent = "Chargement du lecteur (Internet nécessaire)…"; return loadTess(); })
-      .then(function (t) { T = t; return T.createWorker("fra", 1, { logger: function (m) { if (m.status === "recognizing text") st.textContent = "Lecture de l'horaire… " + Math.round(m.progress * 100) + " %"; } }); })
+    toCanvas(file).then(function (c) { canvas = c; st.textContent = "Chargement du lecteur (environ 5 Mo la première fois)…"; return loadTess(); })
+      .then(function (t) { T = t; var base = new URL("vendor/tesseract/", location.href).href; return T.createWorker("fra", 1, { workerPath: base + "worker.min.js", corePath: base, langPath: base + "lang", logger: function (m) { if (m.status === "recognizing text") st.textContent = "Lecture de l'horaire… " + Math.round(m.progress * 100) + " %"; } }); })
       .then(function (w) { return w.setParameters({ tessedit_pageseg_mode: "11" }).then(function () { return w.recognize(canvas); }).then(function (r) { return w.terminate().then(function () { return r; }); }); })
       .then(function (r) {
         var ws = r.data.words;
@@ -1157,7 +1151,7 @@ function parseGrid(words, imgW) {
         st.textContent = "";
         impEditor(g.grid, dt, "Lecture terminée (" + g.found + " jours reconnus sur 6). Vérifie chaque case avec ta photo : la lecture peut se tromper." + (dt ? "" : " Date de début non trouvée : indique-la."));
       })
-      .catch(function (e) { st.textContent = e && e.message === "net" ? "Lecteur indisponible (pas d'Internet ?). Tu peux saisir ton horaire à la main." : "La lecture a échoué. Tu peux saisir ton horaire à la main."; });
+      .catch(function (e) { st.textContent = e && e.message === "net" ? "Lecteur indisponible ici (pas d'Internet, ou page sans le lecteur). Tu peux saisir ton horaire à la main." : "La lecture a échoué. Tu peux saisir ton horaire à la main."; });
   }
   function copyGrid(src) { return DAYNAMES.map(function (d) { var f = src.filter(function (x) { return x.k === d[0]; })[0]; return f ? f.g.slice() : [null, null, null, null]; }); }
   $("#imp-fromA").addEventListener("click", function () { impEditor(copyGrid(DAYS_A), "2026-11-09", "Horaire de la classe A copié. Change ce qui est différent et indique tes salles.", true); });
@@ -1616,8 +1610,7 @@ function parseGrid(words, imgW) {
   }
   var inT;
   function onType() { clearTimeout(inT); inT = setTimeout(function () { save(); flashSaved(); }, 500); }
-  $("#eoe").value = store.eoe; $("#note").value = store.note;
-  $("#eoe").addEventListener("input", function (e) { store.eoe = e.target.value; onType(); });
+  $("#note").value = store.note;
   $("#note").addEventListener("input", function (e) { store.note = e.target.value; onType(); });
 
   /* ---------- weeks, reminders, cancelled classes ---------- */
