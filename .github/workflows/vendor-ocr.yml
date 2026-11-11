@@ -1,0 +1,45 @@
+# Copie, une seule fois, le lecteur de photo (Tesseract.js) dans le dépôt,
+# pour que l'application ne charge plus de code depuis un site tiers.
+name: Copier le lecteur de photo
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/vendor-ocr.yml"
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Télécharger les fichiers
+        run: |
+          set -e
+          T=$(mktemp -d)
+          cd "$T"
+          npm init -y >/dev/null
+          npm install tesseract.js@5.1.1 @tesseract.js-data/fra --no-audit --no-fund
+          cd "$GITHUB_WORKSPACE"
+          rm -rf vendor/tesseract
+          mkdir -p vendor/tesseract/lang
+          cp "$T/node_modules/tesseract.js/dist/tesseract.min.js" vendor/tesseract/
+          cp "$T/node_modules/tesseract.js/dist/worker.min.js" vendor/tesseract/
+          cp "$T"/node_modules/tesseract.js-core/tesseract-core*.js vendor/tesseract/
+          ls "$T"/node_modules/tesseract.js-core/*.wasm >/dev/null 2>&1 && cp "$T"/node_modules/tesseract.js-core/*.wasm vendor/tesseract/ || true
+          F=$(find "$T/node_modules/@tesseract.js-data/fra" -name 'fra.traineddata.gz' | grep -i 'best_int' | head -1)
+          [ -z "$F" ] && F=$(find "$T/node_modules/@tesseract.js-data/fra" -name 'fra.traineddata.gz' | head -1)
+          cp "$F" vendor/tesseract/lang/fra.traineddata.gz
+          cp "$T/node_modules/tesseract.js/LICENSE.md" vendor/tesseract/LICENSE-tesseract.js.md 2>/dev/null || true
+          (cd "$T" && node -e "const a=require('./node_modules/tesseract.js/package.json'),c=require('./node_modules/tesseract.js-core/package.json');console.log(JSON.stringify({tesseractjs:a.version,core:c.version,langue:'fra'},null,1))") > vendor/tesseract/VERSIONS.json
+          du -sh vendor/tesseract; ls -la vendor/tesseract vendor/tesseract/lang
+      - name: Enregistrer dans le dépôt
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add vendor
+          git commit -m "Copie locale du lecteur de photo (Tesseract.js 5.1.1)" || echo "rien à enregistrer"
+          git push
