@@ -18,14 +18,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); color-scheme: light; }
+html { padding-top: env(safe-area-inset-top, 0px); color-scheme: light; }
 body { margin: 0; }
 [hidden] { display: none !important; }
 img { max-width: 100%; }
 a.btn { text-decoration: none; color: inherit; }
 a.btn.primary { color: var(--accent-ink); }
 .tools { display: flex; gap: 8px; align-items: center; flex: none; }
-.install-btn { min-height: 44px; padding: 6px 14px; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 15px; }
+.install-btn { width: 100%; min-height: 48px; padding: 8px 16px; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 15px; }
 
 /* Layout: one column. A live "next class" card sits on top and takes the colour of the coming subject.
    Below it, three tabs (horaire, étude, premiers cours). Motion answers actions; the only unprompted motion
@@ -421,6 +421,21 @@ td .c.off { opacity: .4; text-decoration: line-through; }
 .pe-del svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .pe input { min-height: 44px; min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; padding: 4px 8px; }
 .pe-acts { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+/* ---- Finition « application » : barre d'onglets en bas, pas de rebond, pas de sélection parasite ---- */
+html { overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+input, textarea, select, [contenteditable], .sel { -webkit-user-select: text; user-select: text; }
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; border: 0; border-top: 1px solid var(--line); border-radius: 0; gap: 4px;
+  padding: 6px max(10px, calc((100% - 760px) / 2 + 6px)) calc(6px + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--surface) 92%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 -6px 24px rgba(19, 31, 43, .06); }
+.pill { top: 6px; bottom: calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--accent-soft); border-radius: 14px; }
+.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 54px; font-size: 12px; font-weight: 600; letter-spacing: .01em; }
+.tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-selected="true"] { color: var(--accent); }
+.focus { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+.toast { top: calc(12px + env(safe-area-inset-top, 0px)); }
+@media (display-mode: standalone) { .install-btn, .install-note { display: none !important; } }
 </style>
 </head>
 <body>
@@ -433,10 +448,11 @@ td .c.off { opacity: .4; text-decoration: line-through; }
         <h1>Ma semaine</h1>
         <p class="date" id="date"></p>
       </div>
-      <div class="tools"><button class="install-btn" id="install" type="button" hidden>Installer</button><button class="icon-btn" id="theme" type="button" aria-label="Changer de thème"></button></div>
+      <div class="tools"><button class="icon-btn" id="theme" type="button" aria-label="Changer de thème"></button></div>
     </div>
   </header>
 
+  <button class="install-btn" id="install" type="button" hidden>Installer</button>
   <section class="firstrun" id="firstrun" aria-labelledby="fr-t" hidden>
     <h2 id="fr-t">Quelle est ta classe ?</h2>
     <p>Choisis-la pour afficher le bon horaire et les bonnes salles. Tu pourras changer à tout moment avec les boutons du haut.</p>
@@ -459,11 +475,11 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       <div id="herotl"></div>
     </section>
 
-    <div class="tabs enter" style="--e:2" role="tablist" aria-label="Sections" id="tablist">
+    <div class="tabs" role="tablist" aria-label="Sections" id="tablist">
       <span class="pill init" id="pill" aria-hidden="true"></span>
-      <button class="tab" role="tab" id="t-horaire" type="button" aria-selected="true" aria-controls="p-horaire">Horaire</button>
-      <button class="tab" role="tab" id="t-etude" type="button" aria-selected="false" aria-controls="p-etude" tabindex="-1">Étude</button>
-      <button class="tab" role="tab" id="t-questions" type="button" aria-selected="false" aria-controls="p-questions" tabindex="-1">Rentrée</button>
+      <button class="tab" role="tab" id="t-horaire" type="button" aria-selected="true" aria-controls="p-horaire"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg><span>Horaire</span></button>
+      <button class="tab" role="tab" id="t-etude" type="button" aria-selected="false" aria-controls="p-etude" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg><span>Étude</span></button>
+      <button class="tab" role="tab" id="t-questions" type="button" aria-selected="false" aria-controls="p-questions" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M7 11v5c0 1.5 2.5 3 5 3s5-1.5 5-3v-5"/></svg><span>Rentrée</span></button>
     </div>
 
     <div class="weeknav enter" style="--e:3" id="weeknav">
@@ -1008,6 +1024,7 @@ td .c.off { opacity: .4; text-decoration: line-through; }
       if (on && changed) { void p.offsetWidth; p.classList.add(dir); }
     });
     placePill();
+    if (changed) { var wy = $("#weeknav").getBoundingClientRect().top + window.scrollY - 8; if (name === "questions") wy = $("#p-questions").getBoundingClientRect().top + window.scrollY - 12; if (window.scrollY > wy) window.scrollTo(0, Math.max(0, wy)); }
     $("#weeknav").hidden = name === "questions";
     if (name === "etude") centerStrip();
     if (focus) $("#t-" + name).focus();
@@ -1019,6 +1036,22 @@ td .c.off { opacity: .4; text-decoration: line-through; }
     else if (k === "Home") i = 0; else if (k === "End") i = 2; else return;
     e.preventDefault(); showTab(TABS[i], true);
   });
+
+  /* ---------- gestes et retour tactile ---------- */
+  function tick() { try { if (navigator.vibrate) navigator.vibrate(6); } catch (e) {} }
+  document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest(".tab, .nav-btn, .days button, .chk, input[type=checkbox]")) tick(); });
+  (function () {
+    var box = $("#dayview"), x0 = 0, y0 = 0, on = false;
+    box.addEventListener("touchstart", function (e) {
+      on = e.touches.length === 1 && !(e.target.closest && e.target.closest(".days, input, textarea, select, table, .imp"));
+      if (on) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }
+    }, { passive: true });
+    box.addEventListener("touchend", function (e) {
+      if (!on) return; on = false;
+      var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy)) { var b = $(dx < 0 ? "#next" : "#prev"); if (b && !b.disabled) b.click(); }
+    }, { passive: true });
+  })();
   window.addEventListener("resize", placePill);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(placePill);
   placePill();
@@ -1750,6 +1783,16 @@ function parseGrid(words, imgW) {
 })();
 </script>
 <script>
+(function () {
+  function syncBar() {
+    var c = getComputedStyle(document.body).backgroundColor;
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { m.remove(); });
+    var m = document.createElement("meta"); m.name = "theme-color"; m.content = c; document.head.appendChild(m);
+  }
+  syncBar();
+  new MutationObserver(function () { setTimeout(syncBar, 400); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { setTimeout(syncBar, 400); });
+})();
 (function () {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
