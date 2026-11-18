@@ -1,0 +1,6 @@
+{
+  "firebase": "13.4.0",
+  "bundler": "esbuild 0.28.2",
+  "contenu": "firebase/app + firebase/auth (Google), un seul module ES",
+  "regenerer": "voir scripts/vendor-firebase.sh"
+}

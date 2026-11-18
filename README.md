@@ -9,3 +9,7 @@ Application web installable : ouvrez l'adresse du site dans Chrome (Android) ou 
 - Mode hors connexion : le réseau est essayé d'abord (3 s), puis la copie gardée sur le téléphone.
 
 Pour publier une nouvelle version, changez le numéro de `CACHE` dans `sw.js`.
+
+## Compte Google (facultatif)
+
+L'application fonctionne sans compte. Le bouton « Mon compte » (en haut à droite) permet, une fois Firebase configuré, de se connecter avec Google et de renseigner université et promotion (gardées sur l'appareil pour l'instant). Configuration et suivi du chantier : voir `IMPLEMENTATION_STATUS.md` et `.env.example`.
