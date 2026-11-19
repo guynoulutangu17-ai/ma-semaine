@@ -9,7 +9,7 @@
   var cfg = window.MS_FIREBASE_CONFIG || {};
   var configured = !!(cfg.apiKey && cfg.authDomain && cfg.projectId && cfg.appId);
 
-  var sdk = null, auth = null, user = null, ready = false, busy = false, lastErr = "", sdkFailed = false;
+  var sdk = null, auth = null, appRef = null, user = null, ready = false, busy = false, lastErr = "", sdkFailed = false, confirming = false, outBusy = false;
   var opener = null;
 
   /* ---------- profil local ---------- */
@@ -165,9 +165,10 @@
       el("h3", { text: "Profil étudiant" }),
       el("div", { "class": "acct-f" }, [el("label", { "for": "acct-uni", text: "Université" }), u]),
       el("div", { "class": "acct-f" }, [el("label", { "for": "acct-lvl", text: "Promotion ou niveau d'études" }), l, dl]),
-      el("p", { "class": "imp-warn", text: "Ces deux informations ne viennent pas de Google. Elles sont gardées sur cet appareil." })
+      el("p", { "class": "imp-warn", text: "Ces deux informations ne viennent pas de Google. Elles sont enregistrées dans ton compte et gardées sur cet appareil." })
     ]);
     box.appendChild(card);
+    if (window.MSSync) box.appendChild(syncCard());
 
     var msg = el("p", { "class": "imp-ok", id: "acct-saved", role: "status" });
     var save = el("button", { type: "button", "class": "btn primary", text: "Enregistrer" });
@@ -177,7 +178,8 @@
       msg.className = ok ? "imp-ok" : "imp-err";
       msg.textContent = ok ? "Profil enregistré." : "Impossible d'enregistrer sur cet appareil (stockage plein ou bloqué).";
     });
-    out.addEventListener("click", signOutNow);
+    out.addEventListener("click", function () { confirming = true; lastErr = ""; render(); });
+    if (confirming) { box.appendChild(confirmCard()); return; }
     box.appendChild(el("div", { "class": "imp-btns" }, [save, out]));
     box.appendChild(msg);
     box.appendChild(el("p", { "class": "imp-err", id: "acct-msg", role: "alert", text: lastErr }));
@@ -193,12 +195,14 @@
         apiKey: cfg.apiKey, authDomain: cfg.authDomain, projectId: cfg.projectId,
         storageBucket: cfg.storageBucket || undefined, messagingSenderId: cfg.messagingSenderId || undefined, appId: cfg.appId
       });
+      appRef = app;
       auth = m.getAuth(app);
       auth.languageCode = "fr";
       return m.setPersistence(auth, m.browserLocalPersistence).catch(function () { /* persistance par défaut */ }).then(function () {
         m.onAuthStateChanged(auth, function (u) {
           user = u || null; ready = true; busy = false;
-          if (u) lastErr = "";
+          if (u) { lastErr = ""; if (window.MSSync) window.MSSync.attach({ sdk: sdk, app: appRef, user: u }); }
+          else { confirming = false; if (window.MSSync) window.MSSync.detach(); }
           refreshButton();
           if (!overlay.hidden) render();
         }, function () {
@@ -244,13 +248,77 @@
     });
   }
 
-  function signOutNow() {
-    if (!sdk || !auth) return;
-    sdk.signOut(auth).then(function () { lastErr = ""; }).catch(function () {
-      lastErr = "La déconnexion n'a pas abouti. Réessaie.";
-      if (!overlay.hidden) render();
+  function confirmCard() {
+    var st = window.MSSync ? window.MSSync.status() : { state: "synced" };
+    var unsent = st.state === "pending" || st.state === "error";
+    var go = el("button", { type: "button", "class": "btn primary", id: "acct-out-ok", text: outBusy ? "Déconnexion…" : "Se déconnecter" });
+    var no = el("button", { type: "button", "class": "btn", text: "Annuler" });
+    if (outBusy) { go.disabled = true; no.disabled = true; }
+    go.addEventListener("click", doSignOut);
+    no.addEventListener("click", function () { confirming = false; render(); });
+    return el("div", { "class": "card" }, [
+      el("h3", { text: "Se déconnecter ?" }),
+      el("p", { "class": "imp-p", text: "Ton compte et ses données restent intacts dans le cloud : tu les retrouveras en te reconnectant. Elles seront retirées de ce téléphone pour que personne d'autre ne puisse les voir." }),
+      unsent ? el("p", { "class": "imp-p imp-warn", text: "Certaines modifications n'ont pas encore été envoyées. Elles seront mises à l'abri sur ce téléphone et rejointes à ta prochaine connexion avec ce compte." }) : null,
+      el("div", { "class": "imp-btns" }, [go, no])
+    ]);
+  }
+
+  function doSignOut() {
+    if (outBusy) return;
+    outBusy = true; render();
+    Promise.resolve(window.MSSync ? window.MSSync.signOutSafe() : { ok: true }).then(function (r) {
+      if (!r || !r.ok) {
+        outBusy = false; confirming = false;
+        lastErr = "Impossible de mettre tes modifications à l'abri (stockage plein). Déconnexion annulée : rien n'a été supprimé.";
+        render(); return;
+      }
+      return Promise.resolve(sdk && auth ? sdk.signOut(auth) : null).catch(function () { /* données déjà retirées de l'appareil */ }).then(function () { location.reload(); });
     });
   }
+
+  /* ---------- carte « Sauvegarde » ---------- */
+  var SYNC_TXT = { synced: "Synchronisé", syncing: "Synchronisation en cours…", pending: "Modifications en attente", error: "Erreur de synchronisation" };
+  function syncCard() {
+    var card = el("div", { "class": "card", id: "acct-sync" }, [
+      el("h3", { text: "Sauvegarde" }),
+      el("p", { "class": "sync-line", id: "acct-sync-line", role: "status", "aria-live": "polite" }),
+      el("p", { "class": "imp-warn", id: "acct-sync-sub" }),
+      el("div", { "class": "imp-btns", id: "acct-sync-btns" })
+    ]);
+    setTimeout(function () { paintSync(window.MSSync.status()); }, 0);
+    return card;
+  }
+  function paintSync(s) {
+    var line = box.querySelector("#acct-sync-line"), sub = box.querySelector("#acct-sync-sub"), btns = box.querySelector("#acct-sync-btns");
+    if (!line || !sub || !btns) return;
+    line.innerHTML = "";
+    line.appendChild(el("span", { "class": "sync-dot sync-" + s.state, "aria-hidden": "true" }));
+    line.appendChild(el("b", { text: SYNC_TXT[s.state] || "Sauvegarde" }));
+    var d = s.lastSync ? new Date(s.lastSync) : null;
+    var parts = [];
+    if (s.message) parts.push(s.message);
+    if (d) parts.push("Dernière synchronisation réussie : " + d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + ".");
+    else if (s.state !== "syncing") parts.push("Aucune synchronisation réussie pour l'instant.");
+    if (s.conflicts) parts.push(s.conflicts + " version" + (s.conflicts > 1 ? "s" : "") + " mise" + (s.conflicts > 1 ? "s" : "") + " de côté lors d'une fusion.");
+    sub.textContent = parts.join(" ");
+    btns.innerHTML = "";
+    var now = el("button", { type: "button", "class": "btn", text: "Synchroniser maintenant" });
+    if (s.state === "syncing" || s.offline) now.disabled = true;
+    now.addEventListener("click", function () { window.MSSync.syncNow("manual"); });
+    btns.appendChild(now);
+    if (s.applyPending) {
+      var ap = el("button", { type: "button", "class": "btn primary", text: "Appliquer les mises à jour" });
+      ap.addEventListener("click", function () { window.MSSync.applyNow(); });
+      btns.appendChild(ap);
+    }
+    if (s.conflicts) {
+      var dl = el("button", { type: "button", "class": "btn", text: "Copies de sécurité" });
+      dl.addEventListener("click", function () { window.MSSync.downloadBackups(); });
+      btns.appendChild(dl);
+    }
+  }
+  if (window.MSSync) window.MSSync.onStatus(function (s) { if (!overlay.hidden && user) paintSync(s); });
 
   /* Restaure la session sans gêner le démarrage de l'application */
   if (configured) {

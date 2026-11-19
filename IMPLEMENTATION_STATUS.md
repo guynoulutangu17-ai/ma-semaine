@@ -1,8 +1,8 @@
 # Ma semaine : état d'avancement
 
-Dernière mise à jour : 18 novembre 2026 (mission 1).
+Dernière mise à jour : 19 novembre 2026 (missions 1 et 2).
 
-## Mission 1 : connexion Google facultative et profil étudiant
+## Mission 1 : connexion Google facultative et profil étudiant (terminée)
 
 ### Ce qui a été fait
 
@@ -40,7 +40,7 @@ Nouveaux :
 Modifiés :
 
 - `index.html` : deux balises `<script>` ajoutées avant `</body>` et quelques règles CSS ajoutées à la fin de la feuille de style (préfixes `.acct-*`, `.gbtn`, `.imp-ok`). Rien d'autre.
-- `sw.js` : `CACHE` passé de `ma-semaine-v11` à `ma-semaine-v12`, trois fichiers ajoutés au précache.
+- `sw.js` : `CACHE` passé de `ma-semaine-v11` à `ma-semaine-v12` (devenu `v13` en mission 2), trois fichiers ajoutés au précache.
 
 ### Ce que Guy doit configurer dans Firebase (non fait, aucun accès au projet)
 
@@ -85,19 +85,71 @@ Deux défauts trouvés et corrigés pendant les tests : la touche Échap ne ferm
 - La photo de profil vient de `googleusercontent.com` : elle ne s'affiche pas hors connexion (l'initiale la remplace).
 - Le script principal de `index.html` est minifié et n'a pas été touché. Pour toute intégration profonde en mission 2, préférer des événements ou des fonctions exposées par `account.js` plutôt que de modifier ce script.
 
-## Instructions pour la mission 2 (Cloud Firestore, synchronisation)
+## Mission 2 : sauvegarde cloud et synchronisation (code terminé, non testé avec un vrai Firebase)
 
-À ne commencer qu'après la configuration Firebase ci-dessus et un test réel de connexion.
+**Important : la synchronisation réelle n'a pas pu être testée.** Aucun projet Firebase n'est configuré (`firebase-config.js` est vide) et l'émulateur Firestore ne peut pas être téléchargé depuis l'environnement de travail. Tant que Firebase n'est pas configuré, rien de tout cela ne s'active : l'application fonctionne comme avant, sans compte.
 
-1. Étendre `scripts/vendor-firebase.sh` / `vendor/firebase/entry.js` avec `firebase/firestore` (utiliser `initializeFirestore` avec cache persistant local, ex. `persistentLocalCache`), régénérer le module, ajouter son poids au précache de `sw.js`, bumper `CACHE`.
-2. Modèle de données proposé : `users/{uid}` (profil : `university`, `level`, `updatedAt`) et `users/{uid}/data/{docId}` pour l'état de l'application. Inventorier d'abord les clés `localStorage` existantes : `ma-semaine-cls`, `ma-semaine-custom`, `l1a-planner-v2`, `l1b-planner-v2`, `l1c-planner-v2` (planning, notes, rappels, jours sans cours, thème, rappel .ics, rythme du minuteur), `ma-semaine-profile`. Le script principal lit aussi d'anciennes clés (`l1b-planner-v1`) comme repli : à conserver telles quelles.
-3. Règles Firestore (obligatoires avant toute écriture) : un utilisateur ne lit et n'écrit que `users/{uid}/**` avec `request.auth.uid == uid`, et limiter la taille des documents.
-4. Local-first : le stockage local reste la source de vérité de l'interface ; l'écriture cloud est différée (anti-rebond), tolérante au hors connexion, et ne bloque jamais l'interface.
-5. Fusion à la première connexion : ne jamais écraser sans sauvegarde. Fusion par horodatage `updatedAt` par document ; en cas de conflit sur le planning ou les notes, garder la version la plus récente et conserver l'autre dans une copie de sauvegarde locale avant de remplacer ; proposer un choix à l'utilisateur si les deux côtés contiennent des données.
-6. Migration sécurisée : sauvegarder (copie exportable) avant la première fusion, puis écrire en cloud, puis seulement ensuite marquer la migration comme terminée.
-7. Changement de téléphone : après connexion sur un appareil vide, restaurer depuis le cloud, puis afficher un message de confirmation.
-8. Ajouter dans `account.js` les points d'accroche : appeler la synchronisation depuis `onAuthStateChanged` (connexion), l'arrêter à la déconnexion, et déplacer la sauvegarde du profil vers Firestore (le stockage local reste le cache).
-9. Tests : deux appareils simulés, hors connexion puis reconnexion, conflits, première migration, compte vide.
+### Ce qui a été fait
+
+- Sauvegarde automatique dans `users/{uid}/sync/state` (un seul document par étudiant) dès qu'un compte est connecté : classe (`ma-semaine-cls`), horaire personnalisé (`ma-semaine-custom`), profil (université, promotion) et, pour chaque classe A, B, C, tout l'état (`l1a|l1b|l1c-planner-v2`) : notes, rappels, cours annulés (`off`, `offDay`), séances terminées (`done`), progression, planning de révision (`plan`), tâches et questions (`q`), thème, rappel .ics, rythme du minuteur.
+- Rien n'a été ajouté à l'état existant de l'application : `sync.js` surveille les écritures locales et lit les mêmes clés.
+- Écritures groupées : une seule écriture 3 secondes après la dernière modification, en transaction, et aucune écriture s'il n'y a rien de nouveau.
+- Fusion à trois voies par élément et par champ (local, dernière version synchronisée, cloud) dans `sync-core.js` : les rappels gardent leurs identifiants, pas de doublon, les suppressions sont propagées par marqueurs (purgés après 180 jours), la modification l'emporte sur une suppression concurrente, deux notes modifiées en même temps sont **toutes deux conservées**, et toute version écartée est mise de côté (`ma-semaine-conflicts`, exportable via « Copies de sécurité »).
+- Première connexion : copie de sécurité des données locales (`ma-semaine-premerge`), fusion, puis relecture du cloud pour vérifier que chaque donnée y est avant de considérer la migration terminée. Répétable sans doublon.
+- Hors connexion : les données restent locales, un statut « Modifications en attente » s'affiche, nouvelles tentatives espacées (5 s à 5 min) et reprise automatique au retour du réseau.
+- Deux appareils : un écouteur détecte les changements, les mises à jour du cloud sont appliquées sans jamais écraser une modification locale faite entre-temps (rechargement automatique au démarrage ou quand l'application est en arrière-plan, sinon bouton « Appliquer les mises à jour »).
+- Carte « Sauvegarde » dans « Mon compte » : Synchronisé, Synchronisation en cours, Modifications en attente, Erreur de synchronisation, date de dernière synchronisation réussie, « Synchroniser maintenant ». « Synchronisé » n'apparaît que si l'envoi a été confirmé.
+- Déconnexion sûre (avec confirmation) : envoi final, mise à l'abri locale de ce qui n'a pas pu être envoyé (restaurée à la reconnexion avec le même compte), puis retrait des données du téléphone. Le compte et le cloud ne sont jamais supprimés. Un autre compte ne voit rien de l'ancien.
+- Firestore est compilé **sans cache persistant** (mémoire seulement) : aucune donnée de compte ne reste dans IndexedDB sur un appareil partagé. La copie hors connexion est le stockage local de l'application, retiré à la déconnexion.
+
+### Nouveaux fichiers et modifications
+
+Nouveaux : `sync-core.js` (fusion, validation), `sync.js` (Firestore, hors connexion, comptes), `firestore.rules`, `firebase.json`, `tests/` (`sync-core.test.js`, `firestore-rules.test.mjs`, `browser/`).
+Modifiés : `account.js` (carte Sauvegarde, déconnexion sûre, démarrage de la synchro), `index.html` (2 balises script, CSS `.sync-*`), `sw.js` (cache `v13`, nouveaux fichiers), `vendor/firebase/*` (module recompilé avec Firestore, 580 Ko, chargé seulement si Firebase est configuré, mis en cache à la première utilisation).
+
+### Règles de sécurité Firestore (`firestore.rules`)
+
+- Lecture et écriture uniquement sur `users/{uid}/sync/state` et seulement si `request.auth.uid == uid`. Tout le reste est refusé. Aucune règle publique.
+- Écriture : champs limités à `v`, `leaves`, `rev`, `updatedAt` ; `leaves` doit être une table de 3000 entrées au plus ; `rev` doit augmenter d'exactement 1 ; `updatedAt` doit être l'heure du serveur.
+- Suppression refusée (se déconnecter ne supprime jamais le compte ni ses données).
+- Limite connue : les règles ne peuvent pas inspecter chaque entrée. Le contenu est donc validé par l'application à la lecture (`fromRemote` rejette les clés, types et tailles inattendus). Firestore limite aussi un document à 1 Mo.
+- À faire dans la console : **publier ces règles** (copier `firestore.rules` dans Firestore > Règles > Publier, ou `firebase deploy --only firestore:rules`). Sans cela, la base est refusée ou, selon le mode choisi à la création, trop ouverte : choisir le **mode production** à la création.
+
+### Opérations qui nécessitent ton intervention (en plus de celles de la mission 1)
+
+1. Console Firebase > Firestore Database > Créer une base de données, **mode production**, région proche (ex. `europe-west`).
+2. Publier `firestore.rules` (voir ci-dessus).
+3. Remplir `firebase-config.js` (étapes de la mission 1, déjà décrites plus haut), vérifier le domaine `guynoulutangu17-ai.github.io` dans Authentication, puis pousser sur `main`.
+4. Tester pour de vrai (voir liste ci-dessous), puis, si tout est bon, rien d'autre : la synchronisation démarre dès la première connexion.
+
+### Tests réalisés
+
+**Tests réels : aucun** (pas de projet Firebase, émulateur indisponible).
+
+Tests **simulés**, avec un SDK Firebase simulé et un cloud en mémoire partagé entre plusieurs appareils virtuels (Chrome, écran 390×780) :
+
+- 13 tests unitaires du moteur de fusion (`node tests/sync-core.test.js`) : restauration complète, première fusion sans doublon et répétable, deux notes modifiées en même temps, suppressions et marqueurs, séances liées au planning, conflits, modification contre suppression, validation des données reçues, clé locale illisible jamais écrasée.
+- 33 tests navigateur de synchronisation : migration des données locales (copie de sécurité, vérification, aucune écriture si rien ne change), sauvegarde groupée (3 frappes, une seule écriture), restauration sur un « nouveau téléphone » (note, rappels et leurs identifiants, cours annulé, séances faites, thème, classe, profil), deux appareils (rappels, séances, cours annulés fusionnés, suppression propagée, notes simultanées conservées), hors connexion (statut jamais « Synchronisé », rien d'écrit, reprise au retour du réseau), séparation de deux comptes et déconnexion (données retirées du téléphone, cloud intact, modifications non envoyées mises à l'abri puis retrouvées).
+- 28 tests de non-régression de la mission 1 (sans compte, erreurs de connexion, profil, hors connexion), adaptés à la nouvelle déconnexion.
+- Contrôle avec le **vrai** module Firebase compilé : il se charge et initialise Firestore (`getFirestore`, `doc`) sans erreur ; aucune requête réelle n'a été envoyée.
+- Les règles Firestore : `tests/firestore-rules.test.mjs` est écrit (17 vérifications) mais **n'a pas pu être exécuté** (émulateur non téléchargeable). À lancer : `npx firebase-tools emulators:exec --only firestore "node tests/firestore-rules.test.mjs"` après `npm i --no-save @firebase/rules-unit-testing firebase firebase-tools` (Java requis).
+
+### À vérifier une fois Firebase configuré (tests réels)
+
+1. Connexion Google réelle sur Android (Chrome) et en PWA installée.
+2. Premier appareil : changer l'horaire, écrire une note, cocher des séances, ajouter un rappel ; vérifier dans la console Firestore le document `users/<uid>/sync/state` et l'état « Synchronisé ».
+3. Second appareil (ou navigateur privé) avec le même compte : tout doit être restauré, rappels sans doublon.
+4. Mode avion : modifier, constater « Modifications en attente », rétablir le réseau, constater l'envoi.
+5. Règles : exécuter le test de l'émulateur, puis essayer depuis la console de lire `users/<autre uid>` (doit être refusé).
+6. Deux comptes sur le même téléphone : se déconnecter, se connecter avec un autre compte, vérifier qu'aucune donnée du premier n'apparaît.
+
+### Points d'attention
+
+- Les modifications d'un autre appareil sont appliquées par un rechargement de la page, déclenché au démarrage ou quand l'application passe en arrière-plan ; en cours d'utilisation, un bouton « Appliquer les mises à jour » est proposé pour ne pas interrompre une saisie. Un garde-fou limite à 3 rechargements par minute.
+- Une séance cochée est repérée par sa position dans le planning du jour. Si deux appareils modifient le même planning, la version la plus récente gagne et les séances cochées suivent ce planning ; la version écartée est mise de côté, jamais perdue en silence.
+- Plusieurs onglets ouverts en même temps sur le même navigateur ne sont pas coordonnés entre eux (les transactions Firestore les protègent côté cloud).
+- Un document Firestore est limité à 1 Mo ; l'application s'arrête proprement (erreur affichée, données locales intactes) au-delà de 3000 entrées.
+- Suppression définitive du compte et des données cloud : non prévue dans cette mission.
 
 ## Mission 3 (non commencée)
 

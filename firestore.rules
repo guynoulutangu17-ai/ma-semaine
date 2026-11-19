@@ -1,0 +1,37 @@
+rules_version = '2';
+// Ma semaine : chaque étudiant n'accède qu'à son propre espace users/{uid}/...
+// Tout le reste est refusé. Aucune règle publique, aucun accès « tout utilisateur connecté ».
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Document de synchronisation : users/{uid}/sync/state
+    match /users/{uid}/sync/state {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // Création ou mise à jour : propriétaire seulement, champs connus, révision +1, taille bornée.
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['v', 'leaves', 'rev', 'updatedAt'])
+        && request.resource.data.v == 1
+        && request.resource.data.leaves is map
+        && request.resource.data.leaves.size() <= 3000
+        && request.resource.data.rev == 1
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['v', 'leaves', 'rev', 'updatedAt'])
+        && request.resource.data.v == 1
+        && request.resource.data.leaves is map
+        && request.resource.data.leaves.size() <= 3000
+        && request.resource.data.rev == resource.data.rev + 1
+        && request.resource.data.updatedAt == request.time;
+
+      // Pas de suppression depuis l'application : se déconnecter ne supprime jamais le compte ni ses données.
+      allow delete: if false;
+    }
+
+    // Tout le reste est interdit.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
