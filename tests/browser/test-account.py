@@ -14,7 +14,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox'])
     # ---- A: config vide (état livré)
     c=b.new_context(viewport={'width':390,'height':780}); pg=c.new_page(); errs=[]
-    pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' and 'fonts.g' not in m.text and 'ERR_' not in m.text else None)
+    pg.route('**/firebase-config.js',lambda r:r.fulfill(body='window.MS_FIREBASE_CONFIG={};',content_type='application/javascript')); pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' and 'fonts.g' not in m.text and 'ERR_' not in m.text else None)
     pg.goto(URL); pg.wait_for_selector('#hero'); pg.wait_for_timeout(500)
     ok('A1 app ouvre sans compte (hero visible)', pg.is_visible('#hero'))
     ok('A2 bouton compte present', pg.is_visible('#acct-btn'))
@@ -70,7 +70,7 @@ with sync_playwright() as p:
     pg4.goto(URL); pg4.wait_for_selector('#hero'); pg4.wait_for_function('navigator.serviceWorker.controller!==null',timeout=15000) if False else None
     pg4.evaluate('navigator.serviceWorker.ready.then(()=>1)'); pg4.wait_for_timeout(2500); pg4.reload(); pg4.wait_for_timeout(1500)
     names=pg4.evaluate('caches.keys().then(async k=>{const c=await caches.open(k[0]);return [k,(await c.keys()).map(r=>new URL(r.url).pathname)]})')
-    ok('D1 cache v13 contient account, sync, config', all(any(x.endswith(f) for x in names[1]) for f in ['/account.js','/firebase-config.js','/sync.js','/sync-core.js']) and names[0]==['ma-semaine-v13'], str(names[0]))
+    ok('D1 cache v15 contient account, sync, ui, config', all(any(x.endswith(f) for x in names[1]) for f in ['/account.js','/firebase-config.js','/sync.js','/sync-core.js','/ui.css','/ui.js']) and names[0]==['ma-semaine-v15'], str(names[0]))
     c4.set_offline(True); pg4.reload(); pg4.wait_for_selector('#hero',timeout=10000)
     pg4.click('#acct-btn'); ok('D2 hors connexion : app + fenêtre compte s\'ouvrent', pg4.is_visible('#acct'))
     b.close()

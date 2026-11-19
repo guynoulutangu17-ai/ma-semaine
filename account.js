@@ -46,7 +46,7 @@
   btn.innerHTML = PERSON;
   var tools = document.querySelector(".tools");
   if (!tools) return; /* structure inattendue : on ne touche à rien */
-  tools.insertBefore(btn, tools.firstChild);
+  tools.appendChild(btn);
 
   function avatarNode(size) {
     var wrap;
@@ -64,13 +64,17 @@
   }
   function refreshButton() {
     btn.innerHTML = "";
+    btn.className = "icon-btn" + (user ? " has-user" : "");
     if (user && user.photoURL) {
       var im = el("img", { alt: "", referrerpolicy: "no-referrer", src: user.photoURL });
-      im.addEventListener("error", function () { btn.innerHTML = PERSON; });
+      im.addEventListener("error", function () { btn.className = "icon-btn has-user"; btn.textContent = initial(); });
+      btn.className = "icon-btn";
       btn.appendChild(im);
-    } else btn.innerHTML = PERSON;
+    } else if (user) btn.textContent = initial();
+    else btn.innerHTML = PERSON;
     btn.setAttribute("aria-label", user ? "Mon compte, connecté : " + (user.displayName || user.email || "Google") : "Mon compte");
   }
+  function initial() { return ((user && (user.displayName || user.email)) || "?").charAt(0).toUpperCase(); }
 
   /* ---------- fenêtre « Mon compte » (même style que l'import d'horaire) ---------- */
   var overlay = el("div", { "class": "imp", id: "acct", role: "dialog", "aria-modal": "true", "aria-labelledby": "acct-title", hidden: "" });
@@ -120,7 +124,36 @@
     box.appendChild(h[0]);
     if (user) renderSignedIn();
     else renderSignedOut();
+    if (!(user && (confirming || outBusy))) box.appendChild(appearanceCard());
     box.appendChild(h[1]);
+  }
+
+  /* ---------- Apparence : pilote le bouton de thème existant (même réglage, même sauvegarde) ---------- */
+  var THEMES = [["auto", "Automatique"], ["light", "Clair"], ["dark", "Sombre"]];
+  function currentTheme() {
+    var t = document.documentElement.getAttribute("data-theme");
+    return t === "light" || t === "dark" ? t : "auto";
+  }
+  function setTheme(target) {
+    var order = ["auto", "light", "dark"], btnT = document.getElementById("theme");
+    if (!btnT) return;
+    var steps = (order.indexOf(target) - order.indexOf(currentTheme()) + 3) % 3;
+    for (var k = 0; k < steps; k++) btnT.click();
+    render();
+  }
+  function appearanceCard() {
+    var cur = currentTheme();
+    var seg = el("div", { "class": "seg-ctl acct-theme", role: "group", "aria-label": "Apparence" });
+    THEMES.forEach(function (t) {
+      var b = el("button", { type: "button", "aria-pressed": String(t[0] === cur), text: t[1] });
+      b.addEventListener("click", function () { if (t[0] !== currentTheme()) setTheme(t[0]); });
+      seg.appendChild(b);
+    });
+    return el("div", { "class": "card" }, [
+      el("h3", { text: "Apparence" }),
+      seg,
+      el("p", { "class": "imp-warn", text: "Automatique suit le réglage clair ou sombre de ton téléphone." })
+    ]);
   }
 
   function renderSignedOut() {

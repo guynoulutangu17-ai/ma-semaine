@@ -151,6 +151,20 @@ Tests **simulés**, avec un SDK Firebase simulé et un cloud en mémoire partag�
 - Un document Firestore est limité à 1 Mo ; l'application s'arrête proprement (erreur affichée, données locales intactes) au-delà de 3000 entrées.
 - Suppression définitive du compte et des données cloud : non prévue dans cette mission.
 
+## Refonte visuelle (19 novembre 2026)
+
+Nouveau design d'après l'image de référence, **couleurs d'origine conservées** (variables de `index.html` inchangées).
+
+- `ui.css` (nouveau) : surcharge la feuille de style de `index.html`, chargé juste après. Pour revenir à l'ancien aspect, retirer la balise `<link rel="stylesheet" href="ui.css">`.
+- `ui.js` (nouveau, petit) : sépare « date » et « professeur » dans la carte du prochain cours (avec icônes) ; la cloche ramène aux rappels du jour.
+- `index.html` : en-tête réorganisé (logo, classe, cloche, avatar), onglet « Rentrée » renommé **« Notes »** (identifiants, notes et liste « à repérer » inchangés), bouton « Cours annulé » renommé « Annuler ce cours » (l'étiquette « Cours annulé » désigne un cours réellement annulé). Aucun autre changement du script principal.
+- Compte à rebours **heures, minutes, secondes** conservé dans la carte du prochain cours, ainsi que la frise horaire.
+- **Thème Clair / Sombre / Automatique** : le bouton de thème d'origine reste le moteur (même réglage, même enregistrement avec les données de la classe, même synchronisation), mais il est masqué. Le choix se fait dans « Mon compte », section **Apparence**, accessible avec ou sans compte.
+- `account.js` : bouton avatar (initiale ou photo) à côté de la cloche, section Apparence.
+- `sw.js` : cache `v15`, `ui.css` et `ui.js` ajoutés au précache.
+- Tests : `tests/browser/test-ui.py` (28 vérifications : 360, 390 et 768 px, pas de défilement horizontal, thèmes et enregistrement, cloche, onglet Notes, données intactes, annulation et rétablissement d'un cours). Suites existantes rejouées : 28/28 (compte), 33/33 (synchronisation, simulée), 13/13 (fusion).
+- Non vérifié : rendu sur de vrais téléphones Android (contrôlé par captures Chrome à 360, 390 et 768 px, thèmes clair et sombre).
+
 ## Mission 3 (non commencée)
 
 Pages « À propos de Ma semaine » et « Le développeur ». À placer de préférence dans le menu secondaire « Mon compte » ou un menu Paramètres cohérent.
